@@ -1,0 +1,7 @@
+file(GLOB_RECURSE SOURCES *.cpp *.h)
+add_library(WebToolkit ${SOURCES})
+if(UNIX)
+	target_link_libraries(WebToolkit pthread)
+else(WIN32)
+	target_link_libraries(WebToolkit ws2_32)
+endif()
