@@ -24,6 +24,8 @@ void Client::Run()
 		string st;
 		for(;;)
 		{
+			if(!socket->WaitForLine(2000))
+				throw runtime_error("No data read in 2 seconds, closing connection");
 			st=socket->ReadLine();
 			if(st.empty())
 				break;

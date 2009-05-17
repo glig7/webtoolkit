@@ -79,6 +79,24 @@ string Socket::Read()
 	return string(buf,bytesRead);
 }
 
+bool Socket::WaitForLine(int timeout)
+{
+	int newline=linebuf.find('\n');
+	int pos=linebuf.length();
+	while(newline==string::npos)
+	{
+		if(!Wait(timeout))
+			return false;
+		string t=Read();
+		if(t.empty())
+			break;
+		linebuf+=t;
+		newline=linebuf.find('\n',pos);
+		pos=linebuf.length();
+	}
+	return true;
+}
+
 string Socket::ReadLine()
 {
 	int newline=linebuf.find('\n');
