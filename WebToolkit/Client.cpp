@@ -29,13 +29,15 @@ void Client::Run()
 				break;
 			request.ParseLine(st);
 		}
-		cout<<socket->remoteIP<<(request.isPost?" POST ":" GET ")<<request.resource<<endl;
+		ostringstream r;
+		r<<socket->remoteIP<<(request.isPost?" POST ":" GET ")<<request.resource;
+		Server::Instance().LogWrite(LogInfo,r.str());
 		Server::Instance().Handle(&request,this);
 		Send();
 	}
 	catch(exception& e)
 	{
-		cout<<e.what()<<endl;
+		Server::Instance().LogWrite(LogError,e.what());
 	}
 	delete this;
 }

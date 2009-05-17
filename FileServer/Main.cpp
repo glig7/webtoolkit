@@ -38,6 +38,7 @@ MyConfig::MyConfig():port(8080),rootDir("."),htmlTemplate("list.html")
 
 MyApp::MyApp():server(config.port)
 {
+	//server.SetLogLevel(LogDisabled);
 	server.RegisterHandler(this);
 	server.RegisterNotFoundHandler(this);
 	htmlTemplate=Util::ReadFile(config.htmlTemplate);

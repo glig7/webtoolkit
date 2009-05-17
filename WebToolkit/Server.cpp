@@ -17,7 +17,7 @@ BOOL WINAPI HandlerRoutine(DWORD dwCtrlType)
 #include <signal.h>
 #endif
 
-Server::Server(int port):listener(port),handler(NULL),handlerNotFound(NULL),terminated(false),clientsCount(0)
+Server::Server(int port):listenerPort(port),listener(port),handler(NULL),handlerNotFound(NULL),logger(NULL),logLevel(LogInfo),terminated(false),clientsCount(0)
 {
 	instance=this;
 #ifdef WIN32
@@ -30,12 +30,11 @@ Server::Server(int port):listener(port),handler(NULL),handlerNotFound(NULL),term
 	sigaddset(&sigset,SIGTERM);
 	sigprocmask(SIG_BLOCK,&sigset,NULL);
 #endif
-	cout<<"Started server on port "<<port<<endl;
 }
 
 Server::~Server()
 {
-	cout<<"Server stopped"<<endl;
+	LogWrite(LogInfo,"Server stopped");
 }
 
 Server& Server::Instance()
@@ -45,6 +44,9 @@ Server& Server::Instance()
 
 void Server::Run()
 {
+	ostringstream r;
+	r<<"Started server on port "<<listenerPort;
+	LogWrite(LogInfo,r.str());
 #ifndef WIN32
 	sigset_t sigset;
 #endif
@@ -58,7 +60,7 @@ void Server::Run()
 			terminated=true;
 #endif
 	}
-	cout<<"Waiting for client threads..."<<endl;
+	LogWrite(LogInfo,"Waiting for client threads...");
 	while(clientsCount!=0)
 	{
 	}
@@ -186,4 +188,24 @@ void Server::ServeFile(const string& fileName,HttpRequest* request,HttpResponse*
 		response->DirectSend(buf,br);
 		contentLength-=br;
 	}
+}
+
+void Server::LogWrite(LogMessageType type,const string& message)
+{
+	if(type<logLevel)
+		return;
+	if(logger!=NULL)
+		logger->LogWrite(type,message);
+	else
+		cout<<message<<endl;
+}
+
+void Server::RegisterLogger(ILogger* logger)
+{
+	this->logger=logger;
+}
+
+void Server::SetLogLevel(LogMessageType logLevel)
+{
+	this->logLevel=logLevel;
 }
