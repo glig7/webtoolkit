@@ -103,7 +103,7 @@ string Socket::ReadLine()
 		r=linebuf.substr(0,newline);
 		linebuf.erase(0,newline+1);
 	}
-	if(r[r.length()-1]=='\r')
+	if((!r.empty())&&(r[r.length()-1]=='\r'))
 		r.resize(r.length()-1);
 	return r;
 }
