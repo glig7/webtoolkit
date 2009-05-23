@@ -14,6 +14,7 @@ public:
 	~Client();
 	void Run();
 	void DirectSend(const char* buf,int len);
+	void Start();
 };
 
 #endif

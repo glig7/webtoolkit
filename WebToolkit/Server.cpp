@@ -29,6 +29,7 @@ Server::Server(int port):listenerPort(port),listener(port),handler(NULL),handler
 	sigaddset(&sigset,SIGHUP);
 	sigaddset(&sigset,SIGTERM);
 	sigprocmask(SIG_BLOCK,&sigset,NULL);
+	signal(SIGPIPE,SIG_IGN);
 #endif
 }
 

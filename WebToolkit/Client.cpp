@@ -48,3 +48,13 @@ void Client::DirectSend(const char* buf,int len)
 {
 	socket->Write(buf,len);
 }
+
+void Client::Start()
+{
+#ifdef __UCLIBC__
+	Run();
+#else
+	Thread::Start();
+#endif
+}
+
