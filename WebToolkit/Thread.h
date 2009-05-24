@@ -7,22 +7,12 @@
 #include <pthread.h>
 #endif
 
+typedef void (*ThreadProc)(void* arg);
+
 class Thread
 {
-private:
-#ifdef WIN32
-	HANDLE thread;
-	static DWORD WINAPI thread_func(LPVOID d);
-#else
-	pthread_t thread;
-	static void* thread_func(void* d);
-#endif
 public:
-	Thread();
-	virtual ~Thread();
-	virtual void Run();
-	void Start();
-	void Wait();
+	static void StartThread(ThreadProc threadProc,void* arg);
 };
 
 class Mutex

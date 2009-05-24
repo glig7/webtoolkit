@@ -43,6 +43,13 @@ Server& Server::Instance()
 	return *instance;
 }
 
+void client_thread(void* d)
+{
+	Socket* socket=reinterpret_cast<Socket*>(d);
+	Client client(socket);
+	client.Run();
+}
+
 void Server::Run()
 {
 	ostringstream r;
@@ -54,7 +61,10 @@ void Server::Run()
 	while(!terminated)
 	{
 		if(listener.Wait(500))
-			(new Client(listener.Accept()))->Start();
+		{
+			Socket* socket=listener.Accept();
+			Thread::StartThread(client_thread,socket);
+		}
 #ifndef WIN32
 		sigpending(&sigset);
 		if(sigismember(&sigset,SIGINT)||sigismember(&sigset,SIGTERM))
@@ -177,7 +187,7 @@ void Server::ServeFile(const string& fileName,HttpRequest* request,HttpResponse*
 		}
 	}
 	response->Send();
-	char buf[10240];
+	char buf[1024];
 	while(contentLength>0)
 	{
 		int br;

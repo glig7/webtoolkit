@@ -1,56 +1,47 @@
 #include "Common.h"
 #include "Thread.h"
 
-#ifdef WIN32
+#ifndef WIN32
+#include <signal.h>
+#endif
 
-DWORD WINAPI Thread::thread_func(LPVOID d)
+struct ThreadArgs
 {
-	((Thread*)d)->Run();
+	ThreadProc threadProc;
+	void* arg;
+};
+
+#ifdef WIN32
+DWORD WINAPI
+#else
+void*
+#endif
+thread_func(void* d)
+{
+#ifndef WIN32
+	signal(SIGPIPE,SIG_IGN);
+#endif
+	ThreadArgs* args=reinterpret_cast<ThreadArgs*>(d);
+	(*args->threadProc)(args->arg);
+	delete args;
 	return 0;
 }
-#else
 
-#include <signal.h>
-
-void* Thread::thread_func(void* d)
+void Thread::StartThread(ThreadProc threadProc,void* arg)
 {
-	signal(SIGPIPE,SIG_IGN);
-	((Thread*)d)->Run();
-	return NULL;
-}
-#endif
-
-Thread::Thread()
-{
-}
-
-Thread::~Thread()
-{
-}
-
-void Thread::Run()
-{
-}
-
-void Thread::Start()
-{
+	ThreadArgs* args=new ThreadArgs();
+	args->threadProc=threadProc;
+	args->arg=arg;
 #ifdef WIN32
-	CreateThread(NULL,0,Thread::thread_func,this,0,(LPDWORD)&thread);
+			HANDLE thread;
+			CreateThread(NULL,0,thread_func,args,0,(LPDWORD)&thread);
 #else
-	pthread_attr_t attr;
-	pthread_attr_init(&attr);
-	pthread_attr_setdetachstate(&attr,PTHREAD_CREATE_DETACHED);
-	pthread_create(&thread,&attr,Thread::thread_func,this);
-	pthread_attr_destroy(&attr);
-#endif
-}
-
-void Thread::Wait()
-{
-#ifdef WIN32
-	WaitForSingleObject(thread,INFINITE);
-#else
-	pthread_join(thread,NULL);
+			pthread_t thread;
+			pthread_attr_t attr;
+			pthread_attr_init(&attr);
+			pthread_attr_setdetachstate(&attr,PTHREAD_CREATE_DETACHED);
+			pthread_create(&thread,&attr,thread_func,args);
+			pthread_attr_destroy(&attr);
 #endif
 }
 
