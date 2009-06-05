@@ -46,8 +46,8 @@ vector<DirectoryEntry> Util::DirectoryList(const string& path)
 	DIR* dir=opendir(path.c_str());
 	if(dir==NULL)
 		throw runtime_error("Failed to get directory list");
-	dirent* entry;
-	while((entry=readdir(dir))!=NULL)
+	dirent64* entry;
+	while((entry=readdir64(dir))!=NULL)
 	{
 		if(entry->d_name[0]!='.')
 		{
@@ -58,8 +58,8 @@ vector<DirectoryEntry> Util::DirectoryList(const string& path)
 				e.size=0;
 			else
 			{
-				struct stat s;
-				stat((adjPath+"/"+e.name).c_str(),&s);
+				struct stat64 s;
+				stat64((adjPath+"/"+e.name).c_str(),&s);
 				e.size=s.st_size;
 			}
 			r.push_back(e);
