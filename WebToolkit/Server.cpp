@@ -133,14 +133,14 @@ void Server::OnClientDetach()
 
 void Server::ServeFile(const string& fileName,HttpRequest* request,HttpResponse* response,bool download)
 {
-	int size=Util::GetFileSize(fileName);
+	i64 size=Util::GetFileSize(fileName);
 	if(size==-1)
 	{
 		HandleNotFound(response);
 		return;
 	}
 	File in(fileName,false,true);
-	int contentLength;
+	i64 contentLength;
 	if(request->rangeFrom==-1)
 	{
 		contentLength=size;

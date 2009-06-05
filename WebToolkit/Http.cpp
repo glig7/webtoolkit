@@ -34,10 +34,10 @@ void HttpRequest::ParseLine(const string& line)
 	{
 		size_t eqpos=line.find('=');
 		size_t mpos=line.find('-');
-		rangeFrom=atoi(line.substr(eqpos+1,mpos-eqpos-1).c_str());
+		rangeFrom=_atoi64(line.substr(eqpos+1,mpos-eqpos-1).c_str());
 		string t=line.substr(mpos+1);
 		if(!t.empty())
-			rangeTo=atoi(t.c_str());
+			rangeTo=_atoi64(t.c_str());
 	}
 }
 
@@ -106,7 +106,7 @@ void HttpResponse::SetContentType(const string& st)
 	contentType=st;
 }
 
-void HttpResponse::SetContentLength(int len)
+void HttpResponse::SetContentLength(i64 len)
 {
 	contentLength=len;
 }
@@ -124,7 +124,7 @@ void HttpResponse::Redirect(const string& st)
 	location=st;
 }
 
-void HttpResponse::SetContentRange(int from,int to,int total)
+void HttpResponse::SetContentRange(i64 from,i64 to,i64 total)
 {
 	result="HTTP/1.0 206 Partial Content";
 	rangeFrom=from;

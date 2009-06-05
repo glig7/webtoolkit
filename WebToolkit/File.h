@@ -18,7 +18,7 @@ public:
 	void Write(const char* buf,size_t len);
 	void Write(const string& st);
 	void WriteLine(const string& st);
-	void Seek(int offset);
+	void Seek(i64 offset);
 };
 
 #endif

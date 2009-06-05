@@ -5,7 +5,7 @@ struct DirectoryEntry
 {
 	bool isDirectory;
 	string name;
-	unsigned int size;
+	i64 size;
 };
 
 enum CheckPathResult
@@ -37,7 +37,7 @@ public:
 	static string HTMLEscape(const string& st);
 	static string StringToLower(const string& st);
 	static CheckPathResult CheckPath(const string& st);
-	static int GetFileSize(const string& st);
+	static i64 GetFileSize(const string& st);
 	static string URLDecode(const string& st);
 	static string URLEncode(const string& st);
 	static bool PathValid(const string& st);

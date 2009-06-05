@@ -17,8 +17,8 @@ vector<DirectoryEntry> Util::DirectoryList(const string& path)
 	vector<DirectoryEntry> r;
 #ifdef WIN32
 	wstring wadjPath=Util::UTF8Decode(adjPath);
-	_wfinddata_t fi;
-	intptr_t h=_wfindfirst((wadjPath+L"\\*.*").c_str(),&fi);
+	_wfinddata64_t fi;
+	intptr_t h=_wfindfirst64((wadjPath+L"\\*.*").c_str(),&fi);
 	if(h==-1)
 		throw runtime_error("Failed to get directory list");
 	for(;;)
@@ -32,13 +32,13 @@ vector<DirectoryEntry> Util::DirectoryList(const string& path)
 				e.size=0;
 			else
 			{
-				struct _stat s;
-				_wstat((wadjPath+L"\\"+fi.name).c_str(),&s);
+				struct _stat64 s;
+				_wstat64((wadjPath+L"\\"+fi.name).c_str(),&s);
 				e.size=s.st_size;
 			}
 			r.push_back(e);
 		}
-		if(_wfindnext(h,&fi)!=0)
+		if(_wfindnext64(h,&fi)!=0)
 			break;
 	}
 	_findclose(h);
@@ -134,11 +134,11 @@ CheckPathResult Util::CheckPath(const string& st)
 {
 	wstring t=UTF8Decode(AdjustPath(st));
 #ifdef WIN32
-	struct _stat s;
-	if(_wstat(UTF8Decode(AdjustPath(st)).c_str(),&s)!=0)
+	struct _stat64 s;
+	if(_wstat64(UTF8Decode(AdjustPath(st)).c_str(),&s)!=0)
 #else
-	struct stat s;
-	if(stat(AdjustPath(st).c_str(),&s)!=0)
+	struct stat64 s;
+	if(stat64(AdjustPath(st).c_str(),&s)!=0)
 #endif
 		return PathNotExist;
 	if(s.st_mode&S_IFDIR)
@@ -147,14 +147,14 @@ CheckPathResult Util::CheckPath(const string& st)
 		return PathIsFile;
 }
 
-int Util::GetFileSize(const string& st)
+i64 Util::GetFileSize(const string& st)
 {
 #ifdef WIN32
-	struct _stat s;
-	if(_wstat(UTF8Decode(AdjustPath(st)).c_str(),&s)!=0)
+	struct _stat64 s;
+	if(_wstat64(UTF8Decode(AdjustPath(st)).c_str(),&s)!=0)
 #else
-	struct stat s;
-	if(stat(AdjustPath(st).c_str(),&s)!=0)
+	struct stat64 s;
+	if(stat64(AdjustPath(st).c_str(),&s)!=0)
 #endif
 		return -1;
 	return s.st_size;
@@ -256,9 +256,12 @@ vector<string> Util::Extract(const string& st)
 
 string Util::ReadFile(const string& st)
 {
-	int size=Util::GetFileSize(st);
-	if(size==-1)
+	i64 size64=Util::GetFileSize(st);
+	if(size64==-1)
 		throw runtime_error("File not found");
+	if(size64>10*1024*1024)
+		throw runtime_error("Don't use Util::ReadFile for huge files");
+	int size=static_cast<int>(size64);
 	Buffer buf(size);
 	File file(st,false,true);
 	file.Read(buf.buf,size);

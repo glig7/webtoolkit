@@ -17,5 +17,8 @@ using namespace std;
 typedef basic_string<wchar_t> wstring;
 #endif
 
+typedef long long i64;
+typedef unsigned long long ui64;
+
 #endif
 

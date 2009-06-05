@@ -86,9 +86,13 @@ void File::WriteLine(const string& st)
 	Write("\n");
 }
 
-void File::Seek(int offset)
+void File::Seek(i64 offset)
 {
-	if(fseek(f,offset,SEEK_SET)!=0)
+#ifdef WIN32
+	if(_fseeki64(f,offset,SEEK_SET)!=0)
+#else
+	if(fseeko(f,offset,SEEK_SET)!=0)
+#endif
 		throw runtime_error("File seek failed");
 }
 

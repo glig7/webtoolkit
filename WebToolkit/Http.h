@@ -10,7 +10,7 @@ public:
 	string userAgent;
 	string clientIP;
 	int clientPort;
-	int rangeFrom,rangeTo;
+	i64 rangeFrom,rangeTo;
 	HttpRequest();
 	void ParseLine(const string& line);
 };
@@ -22,8 +22,8 @@ private:
 	string result;
 	string contentType;
 	string location;
-	int contentLength;
-	int rangeFrom,rangeTo,rangeTotal;
+	i64 contentLength;
+	i64 rangeFrom,rangeTo,rangeTotal;
 	ostringstream body;
 	time_t expireTime;
 public:
@@ -36,10 +36,10 @@ public:
 	void DirectSend(const string& buf);
 	void Send();
 	void SetContentType(const string& st);
-	void SetContentLength(int len);
+	void SetContentLength(i64 len);
 	void Redirect(const string& st);
 	void Clean();
-	void SetContentRange(int from,int to,int total);
+	void SetContentRange(i64 from,i64 to,i64 total);
 	void SetExpires(time_t t);
 };
 
