@@ -3,7 +3,7 @@
 
 #include <WebToolkit.h>
 
-class MyConfig
+class FileServerConfig
 {
 public:
 	string ip;
@@ -13,19 +13,19 @@ public:
 	string favIcon;
 	string bindWhat;
 	string bindAs;
-	MyConfig();
+	FileServerConfig();
 };
 
-class MyApp:public IHttpRequestHandler,public INotFoundHandler
+class FileServer:public IHttpRequestHandler,public INotFoundHandler
 {
 private:
-	MyConfig config;
+	FileServerConfig config;
 	Server server;
 	string htmlTemplate;
 	string folderTemplate;
 	string fileTemplate;
 public:
-	MyApp();
+	FileServer();
 	void Run();
 	void HandleNotFound(HttpResponse* response);
 	void Handle(HttpRequest* request,HttpResponse* response);

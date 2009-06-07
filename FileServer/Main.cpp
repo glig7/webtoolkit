@@ -1,7 +1,6 @@
-#include "Common.h"
 #include "Main.h"
 
-MyConfig::MyConfig():ip("0.0.0.0"),port(8080),rootDir("."),htmlTemplate("list.html")
+FileServerConfig::FileServerConfig():ip("0.0.0.0"),port(8080),rootDir("."),htmlTemplate("list.html")
 {
 	File in("FileServer.conf",false,false);
 	while(!in.Eof())
@@ -47,7 +46,7 @@ MyConfig::MyConfig():ip("0.0.0.0"),port(8080),rootDir("."),htmlTemplate("list.ht
 	}
 }
 
-MyApp::MyApp():server(config.port,config.ip)
+FileServer::FileServer():server(config.port,config.ip)
 {
 	server.RegisterHandler(this);
 	server.RegisterNotFoundHandler(this);
@@ -62,12 +61,12 @@ MyApp::MyApp():server(config.port,config.ip)
 	htmlTemplate.erase(fileStart,fileEnd-fileStart+9);
 }
 
-void MyApp::Run()
+void FileServer::Run()
 {
 	server.Run();
 }
 
-void MyApp::HandleNotFound(HttpResponse* response)
+void FileServer::HandleNotFound(HttpResponse* response)
 {
 	response->Write("<html><body><h1>404 Not Found</h1><p>Sorry!</p></body></html>");
 }
@@ -81,7 +80,7 @@ bool compare(const DirectoryEntry& e1,const DirectoryEntry& e2)
 	return Util::StringToLower(e1.name)<Util::StringToLower(e2.name);
 }
 
-void MyApp::Handle(HttpRequest* request,HttpResponse* response)
+void FileServer::Handle(HttpRequest* request,HttpResponse* response)
 {
 	if(request->resource=="/favicon.ico")
 	{
@@ -177,7 +176,7 @@ int main()
 {
 	try
 	{
-		MyApp app;
+		FileServer app;
 		app.Run();
 	}
 	catch(exception& e)
