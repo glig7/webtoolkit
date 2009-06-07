@@ -114,7 +114,7 @@ void FileServer::Handle(HttpRequest* request,HttpResponse* response)
 	}
 	path=config.rootDir+path;
 	bool trailingSlash=(request->resource[request->resource.length()-1]=='/');
-	if(!path.empty())
+	if((!path.empty())&&(path!="/"))
 	{
 		string path2=path;
 		if(trailingSlash)
