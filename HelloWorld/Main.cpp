@@ -1,6 +1,6 @@
 #include "Main.h"
 
-HelloWorld::HelloWorld():server(80,"0.0.0.0")
+HelloWorld::HelloWorld():server(8080,"0.0.0.0")
 {
 	server.RegisterHandler(this);
 }
