@@ -6,9 +6,11 @@
 class MyConfig
 {
 public:
+	string ip;
 	int port;
 	string rootDir;
 	string htmlTemplate;
+	string favIcon;
 	string bindWhat;
 	string bindAs;
 	MyConfig();

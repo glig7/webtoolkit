@@ -144,7 +144,7 @@ void Socket::Write(const string& buf)
 	Write(buf.c_str(),buf.length());
 }
 
-Listener::Listener(int portNumber)
+Listener::Listener(int portNumber,const string& ip)
 {
 	sock=socket(PF_INET,SOCK_STREAM,IPPROTO_TCP);
 	if(sock<0)
@@ -153,7 +153,7 @@ Listener::Listener(int portNumber)
 	memset(&stSockAddr,0,sizeof (stSockAddr));
 	stSockAddr.sin_family=AF_INET;
 	stSockAddr.sin_port=htons(portNumber);
-	stSockAddr.sin_addr.s_addr=INADDR_ANY;
+	stSockAddr.sin_addr.s_addr=inet_addr(ip.c_str());
 	if(bind(sock,(const sockaddr*)&stSockAddr,sizeof (stSockAddr))<0)
 		throw runtime_error("Failed to bind socket");
 	if(listen(sock,10)<0)

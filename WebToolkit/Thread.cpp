@@ -33,15 +33,15 @@ void Thread::StartThread(ThreadProc threadProc,void* arg)
 	args->threadProc=threadProc;
 	args->arg=arg;
 #ifdef WIN32
-			HANDLE thread;
-			CreateThread(NULL,0,thread_func,args,0,(LPDWORD)&thread);
+	HANDLE thread;
+	CreateThread(NULL,0,thread_func,args,0,(LPDWORD)&thread);
 #else
-			pthread_t thread;
-			pthread_attr_t attr;
-			pthread_attr_init(&attr);
-			pthread_attr_setdetachstate(&attr,PTHREAD_CREATE_DETACHED);
-			pthread_create(&thread,&attr,thread_func,args);
-			pthread_attr_destroy(&attr);
+	pthread_t thread;
+	pthread_attr_t attr;
+	pthread_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr,PTHREAD_CREATE_DETACHED);
+	pthread_create(&thread,&attr,thread_func,args);
+	pthread_attr_destroy(&attr);
 #endif
 }
 

@@ -31,7 +31,7 @@ public:
 class Listener:public BaseSocket
 {
 public:
-	Listener(int portNumber);
+	Listener(int portNumber,const string& ip);
 	~Listener();
 	Socket* Accept();
 };

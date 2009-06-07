@@ -34,9 +34,10 @@ private:
 	Mutex clientsMutex;
 	volatile int clientsCount;
 	int listenerPort;
+	string listenerIP;
 public:
 	volatile bool terminated;
-	Server(int port);
+	Server(int port,const string& ip);
 	~Server();
 	static Server& Instance();
 	void Run();

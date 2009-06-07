@@ -1,15 +1,20 @@
 #include "Common.h"
 #include "Main.h"
 
-MyConfig::MyConfig():port(8080),rootDir("."),htmlTemplate("list.html")
+MyConfig::MyConfig():ip("0.0.0.0"),port(8080),rootDir("."),htmlTemplate("list.html")
 {
-	File in("httpd.conf",false,false);
+	File in("FileServer.conf",false,false);
 	while(!in.Eof())
 	{
 		string line=in.ReadLine();
 		if((!line.empty())&&(line[0]!='#'))
 		{
 			vector<string> elements=Util::Extract(line);
+			if(elements[0]=="IP")
+			{
+				ip=elements[1];
+				continue;
+			}
 			if(elements[0]=="Port")
 			{
 				port=atoi(elements[1].c_str());
@@ -18,11 +23,18 @@ MyConfig::MyConfig():port(8080),rootDir("."),htmlTemplate("list.html")
 			if(elements[0]=="RootDirectory")
 			{
 				rootDir=elements[1];
+				if((rootDir[rootDir.size()-1]=='/')||(rootDir[rootDir.size()-1]=='\\'))
+					rootDir.resize(rootDir.size()-1);
 				continue;
 			}
 			if(elements[0]=="HTMLTemplate")
 			{
 				htmlTemplate=elements[1];
+				continue;
+			}
+			if(elements[0]=="FavIcon")
+			{
+				favIcon=elements[1];
 				continue;
 			}
 			if(elements[0]=="BindDirectory")
@@ -35,10 +47,8 @@ MyConfig::MyConfig():port(8080),rootDir("."),htmlTemplate("list.html")
 	}
 }
 
-
-MyApp::MyApp():server(config.port)
+MyApp::MyApp():server(config.port,config.ip)
 {
-	//server.SetLogLevel(LogDisabled);
 	server.RegisterHandler(this);
 	server.RegisterNotFoundHandler(this);
 	htmlTemplate=Util::ReadFile(config.htmlTemplate);
@@ -59,7 +69,7 @@ void MyApp::Run()
 
 void MyApp::HandleNotFound(HttpResponse* response)
 {
-	response->Write("<html><body><h1>404 Not Found</h1><p>This is custom error page</p></body></html>");
+	response->Write("<html><body><h1>404 Not Found</h1><p>Sorry!</p></body></html>");
 }
 
 bool compare(const DirectoryEntry& e1,const DirectoryEntry& e2)
@@ -73,6 +83,11 @@ bool compare(const DirectoryEntry& e1,const DirectoryEntry& e2)
 
 void MyApp::Handle(HttpRequest* request,HttpResponse* response)
 {
+	if(request->resource=="/favicon.ico")
+	{
+		Server::Instance().ServeFile(config.favIcon,request,response);
+		return;
+	}
 	string urlPath=Util::URLDecode(request->resource);
 	string path=urlPath;
 	if(!Util::PathValid(path))

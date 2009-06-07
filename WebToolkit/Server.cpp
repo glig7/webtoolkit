@@ -17,7 +17,7 @@ BOOL WINAPI HandlerRoutine(DWORD dwCtrlType)
 #include <signal.h>
 #endif
 
-Server::Server(int port):listenerPort(port),listener(port),handler(NULL),handlerNotFound(NULL),logger(NULL),logLevel(LogInfo),terminated(false),clientsCount(0)
+Server::Server(int port,const string& ip):listenerPort(port),listenerIP(ip),listener(port,ip),handler(NULL),handlerNotFound(NULL),logger(NULL),logLevel(LogInfo),terminated(false),clientsCount(0)
 {
 	instance=this;
 #ifdef WIN32
@@ -53,7 +53,7 @@ void client_thread(void* d)
 void Server::Run()
 {
 	ostringstream r;
-	r<<"Started server on port "<<listenerPort;
+	r<<"Started server on "<<listenerIP<<":"<<listenerPort;
 	LogWrite(LogInfo,r.str());
 #ifndef WIN32
 	sigset_t sigset;

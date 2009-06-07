@@ -1,0 +1,39 @@
+body
+{
+	font-family:"Tahoma",sans-serif;
+	font-size:10pt;
+}
+
+#list
+{
+	text-align:left;
+	border-width:1px;
+	border-style:solid;
+	border-color:#C0C0FF;
+}
+
+th,td
+{
+	padding:0 5px 0 5px;
+}
+
+th
+{
+	background-color:#C0C0FF;
+}
+
+#header
+{
+	margin-bottom:20px;
+}
+
+#footer
+{
+	margin-top:20px;
+	color:#808080;
+}
+
+#wd
+{
+	font-weight:bold;
+}

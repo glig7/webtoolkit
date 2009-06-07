@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+ <head>
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="stylesheet" type="text/css" href="/s/list.css" />
+  <title>File Server</title>
+ </head>
+ <body>
+  <div id="outer">
+  <div id="header">
+   <table><tr><td><img src="/s/connect.png" alt="Logo" /></td><td><h2>File Server</h2></td></tr></table>
+   You're currently browsing: <span id="wd"><%pwd%></span>
+  </div>
+  <div id="body">
+   <table id="list">
+    <tr>
+     <th></th>
+     <th>Name</th>
+     <th>Size</th>
+    </tr>
+    <tr>
+     <td><img src="/s/top.png" alt="Top" /></td>
+     <td><a href="/">Root Directory</a></td>
+     <td>&lt;DIR&gt;</td>
+    </tr>
+    <tr>
+     <td><img src="/s/up.png" alt="Top" /></td>
+     <td><a href="..">Parent Directory</a></td>
+     <td>&lt;DIR&gt;</td>
+    </tr>
+    <%list%>
+    <%folder%>
+    <tr>
+     <td><img src="/s/folder.png" alt="Folder" /></td>
+     <td><a href="<%link%>"><%name%></a></td>
+     <td>&lt;DIR&gt;</td>
+    </tr>
+    <%/folder%>
+    <%file%>
+    <tr>
+     <td><img src="/s/file.png" alt="File" /></td>
+     <td><a href="<%link%>"><%name%></a></td>
+     <td><%size%></td>
+    </tr>
+    <%/file%>
+   </table>
+  </div>
+  <div id="footer">
+   Powered by <a href="http://code.google.com/p/madfish-webtoolkit/">Mad Fish's Web Toolkit</a><br />
+   ©2009 Alexander "Mad Fish" Chehovsky
+  </div>
+  </div>
+ </body>
+</html>
