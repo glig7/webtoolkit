@@ -13,7 +13,8 @@ File::File(const string& fileName,bool write):f(NULL),eof(false)
 		throw runtime_error("Failed to open file "+fileName);
 #else
 	string t=write?"w":"r";
-	f=fopen(Util::AdjustPath(fileName).c_str(),"b");
+	t+="b";
+	f=fopen(Util::AdjustPath(fileName).c_str(),t.c_str());
 	if(f==NULL)
 		throw runtime_error("Failed to open file "+fileName);
 #endif
