@@ -2,7 +2,7 @@
 
 FileServerConfig::FileServerConfig():ip("0.0.0.0"),port(8080),rootDir("."),htmlTemplate("list.html")
 {
-	File in("FileServer.conf",false,false);
+	File in("FileServer.conf",false);
 	while(!in.Eof())
 	{
 		string line=in.ReadLine();

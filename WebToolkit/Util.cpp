@@ -6,7 +6,7 @@
 #include <sys/stat.h>
 
 #ifdef WIN32
-#include <io.h>
+#include <windows.h>
 #else
 #include <dirent.h>
 #endif
@@ -17,33 +17,34 @@ vector<DirectoryEntry> Util::DirectoryList(const string& path)
 	vector<DirectoryEntry> r;
 #ifdef WIN32
 	wstring wadjPath=Util::UTF8Decode(adjPath);
-	_wfinddata64_t fi;
-	intptr_t h=_wfindfirst64((wadjPath+L"\\*.*").c_str(),&fi);
-	if(h==-1)
+	WIN32_FIND_DATAW findData;
+	HANDLE hFind=FindFirstFileW((wadjPath+L"\\*.*").c_str(),&findData);
+	if(hFind==INVALID_HANDLE_VALUE)
 		throw runtime_error("Failed to get directory list");
 	for(;;)
 	{
-		if(fi.name[0]!='.')
+		if(findData.cFileName[0]!=L'.')
 		{
 			DirectoryEntry e;
-			e.name=UTF8Encode(fi.name);
-			e.isDirectory=(fi.attrib&_A_SUBDIR)!=0;
+			e.name=UTF8Encode(findData.cFileName);
+			e.isDirectory=(findData.dwFileAttributes&FILE_ATTRIBUTE_DIRECTORY)!=0;
 			if(e.isDirectory)
 				e.size=0;
 			else
 			{
-				struct _stat64 s;
-				_wstat64((wadjPath+L"\\"+fi.name).c_str(),&s);
-				e.size=s.st_size;
+				LARGE_INTEGER i;
+				i.LowPart=findData.nFileSizeLow;
+				i.HighPart=findData.nFileSizeHigh;
+				e.size=i.QuadPart;
 			}
 			r.push_back(e);
 		}
-		if(_wfindnext64(h,&fi)!=0)
+		if(FindNextFileW(hFind,&findData)==0)
 			break;
 	}
-	_findclose(h);
+	FindClose(hFind);
 #else
-	DIR* dir=opendir(path.c_str());
+	DIR* dir=opendir(adjPath.c_str());
 	if(dir==NULL)
 		throw runtime_error("Failed to get directory list");
 	dirent* entry;
@@ -52,16 +53,14 @@ vector<DirectoryEntry> Util::DirectoryList(const string& path)
 		if(entry->d_name[0]!='.')
 		{
 			DirectoryEntry e;
-			e.isDirectory=(entry->d_type==DT_DIR);
 			e.name=entry->d_name;
+			struct stat s;
+			stat((adjPath+"/"+e.name).c_str(),&s);
+			e.isDirectory=((s.st_mode&S_IFDIR)!=0);
 			if(e.isDirectory)
 				e.size=0;
 			else
-			{
-				struct stat s;
-				stat((adjPath+"/"+e.name).c_str(),&s);
 				e.size=s.st_size;
-			}
 			r.push_back(e);
 		}
 	}
@@ -79,7 +78,7 @@ string Util::AdjustPath(const string& path)
 		switch(path[i])
 		{
 		case '/':
-			r<<"\\";
+			r<<'\\';
 			break;
 		default:
 			r<<path[i];
@@ -132,32 +131,43 @@ string Util::StringToLower(const string& st)
 
 CheckPathResult Util::CheckPath(const string& st)
 {
-	wstring t=UTF8Decode(AdjustPath(st));
 #ifdef WIN32
-	struct _stat64 s;
-	if(_wstat64(UTF8Decode(AdjustPath(st)).c_str(),&s)!=0)
-#else
-	struct stat s;
-	if(stat(AdjustPath(st).c_str(),&s)!=0)
-#endif
+	DWORD fileAttr=GetFileAttributesW(UTF8Decode(AdjustPath(st)).c_str());
+	if(fileAttr==INVALID_FILE_ATTRIBUTES)
 		return PathNotExist;
-	if(s.st_mode&S_IFDIR)
+	if((fileAttr&FILE_ATTRIBUTE_DIRECTORY)!=0)
 		return PathIsDirectory;
 	else
 		return PathIsFile;
+#else
+	struct stat s;
+	if(stat(AdjustPath(st).c_str(),&s)!=0)
+		return PathNotExist;
+	if((s.st_mode&S_IFDIR)!=0)
+		return PathIsDirectory;
+	else
+		return PathIsFile;
+#endif
 }
 
 i64 Util::GetFileSize(const string& st)
 {
 #ifdef WIN32
-	struct _stat64 s;
-	if(_wstat64(UTF8Decode(AdjustPath(st)).c_str(),&s)!=0)
+	WIN32_FIND_DATAW findData;
+	HANDLE hFind=FindFirstFileW(UTF8Decode(AdjustPath(st)).c_str(),&findData);
+	if(hFind==INVALID_HANDLE_VALUE)
+		return -1;
+	FindClose(hFind);
+	LARGE_INTEGER i;
+	i.LowPart=findData.nFileSizeLow;
+	i.HighPart=findData.nFileSizeHigh;
+	return i.QuadPart;
 #else
 	struct stat s;
 	if(stat(AdjustPath(st).c_str(),&s)!=0)
-#endif
 		return -1;
 	return s.st_size;
+#endif
 }
 
 string Util::URLDecode(const string& st)
@@ -263,7 +273,7 @@ string Util::ReadFile(const string& st)
 		throw runtime_error("Don't use Util::ReadFile for huge files");
 	int size=static_cast<int>(size64);
 	Buffer buf(size);
-	File file(st,false,true);
+	File file(st,false);
 	file.Read(buf.buf,size);
 	string r(buf.buf,size);
 	return r;

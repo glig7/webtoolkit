@@ -73,7 +73,7 @@ Socket::~Socket()
 string Socket::Read()
 {
 	char buf[1024];
-	int bytesRead=recv(sock,buf,sizeof (buf),0);
+	int bytesRead=recv(sock,buf,sizeof(buf),0);
 	if(bytesRead<0)
 		throw runtime_error("Socket read error");
 	return string(buf,bytesRead);

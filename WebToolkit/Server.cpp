@@ -139,7 +139,7 @@ void Server::ServeFile(const string& fileName,HttpRequest* request,HttpResponse*
 		HandleNotFound(response);
 		return;
 	}
-	File in(fileName,false,true);
+	File in(fileName,false);
 	i64 contentLength;
 	if(request->rangeFrom==-1)
 	{
@@ -192,7 +192,7 @@ void Server::ServeFile(const string& fileName,HttpRequest* request,HttpResponse*
 	{
 		int br;
 		if(contentLength<sizeof(buf))
-			br=contentLength;
+			br=static_cast<int>(contentLength);
 		else
 			br=sizeof(buf);
 		in.Read(buf,br);

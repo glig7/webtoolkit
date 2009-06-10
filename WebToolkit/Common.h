@@ -1,6 +1,10 @@
 #ifndef _COMMON_H
 #define	_COMMON_H
 
+#ifdef _MSC_VER
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
 #include <stdexcept>
 #include <iostream>
 #include <string>
