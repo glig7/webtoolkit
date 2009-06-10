@@ -46,8 +46,8 @@ vector<DirectoryEntry> Util::DirectoryList(const string& path)
 	DIR* dir=opendir(path.c_str());
 	if(dir==NULL)
 		throw runtime_error("Failed to get directory list");
-	dirent64* entry;
-	while((entry=readdir64(dir))!=NULL)
+	dirent* entry;
+	while((entry=readdir(dir))!=NULL)
 	{
 		if(entry->d_name[0]!='.')
 		{
@@ -58,8 +58,8 @@ vector<DirectoryEntry> Util::DirectoryList(const string& path)
 				e.size=0;
 			else
 			{
-				struct stat64 s;
-				stat64((adjPath+"/"+e.name).c_str(),&s);
+				struct stat s;
+				stat((adjPath+"/"+e.name).c_str(),&s);
 				e.size=s.st_size;
 			}
 			r.push_back(e);
@@ -137,8 +137,8 @@ CheckPathResult Util::CheckPath(const string& st)
 	struct _stat64 s;
 	if(_wstat64(UTF8Decode(AdjustPath(st)).c_str(),&s)!=0)
 #else
-	struct stat64 s;
-	if(stat64(AdjustPath(st).c_str(),&s)!=0)
+	struct stat s;
+	if(stat(AdjustPath(st).c_str(),&s)!=0)
 #endif
 		return PathNotExist;
 	if(s.st_mode&S_IFDIR)
@@ -153,8 +153,8 @@ i64 Util::GetFileSize(const string& st)
 	struct _stat64 s;
 	if(_wstat64(UTF8Decode(AdjustPath(st)).c_str(),&s)!=0)
 #else
-	struct stat64 s;
-	if(stat64(AdjustPath(st).c_str(),&s)!=0)
+	struct stat s;
+	if(stat(AdjustPath(st).c_str(),&s)!=0)
 #endif
 		return -1;
 	return s.st_size;
