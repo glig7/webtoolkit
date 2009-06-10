@@ -149,6 +149,8 @@ Listener::Listener(int portNumber,const string& ip)
 	sock=socket(PF_INET,SOCK_STREAM,IPPROTO_TCP);
 	if(sock<0)
 		throw runtime_error("Failed to create socket");
+	int val=1;
+	setsockopt(sock,SOL_SOCKET,SO_REUSEADDR,&val,sizeof(val));
 	sockaddr_in stSockAddr;
 	memset(&stSockAddr,0,sizeof (stSockAddr));
 	stSockAddr.sin_family=AF_INET;
