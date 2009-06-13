@@ -5,13 +5,11 @@
 Client::Client(Socket* socket)
 {
 	this->socket=socket;
-	Server::Instance().OnClientAttach();
 }
 
 Client::~Client()
 {
 	delete socket;
-	Server::Instance().OnClientDetach();
 }
 
 void Client::Run()
@@ -24,8 +22,6 @@ void Client::Run()
 		string st;
 		for(;;)
 		{
-			if(!socket->WaitForLine(2000))
-				throw runtime_error("No data read in 2 seconds, closing connection");
 			st=socket->ReadLine();
 			if(st.empty())
 				break;

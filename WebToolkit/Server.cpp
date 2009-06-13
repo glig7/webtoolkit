@@ -17,7 +17,7 @@ BOOL WINAPI HandlerRoutine(DWORD dwCtrlType)
 #include <signal.h>
 #endif
 
-Server::Server(int port,const string& ip):listenerPort(port),listenerIP(ip),listener(port,ip),handler(NULL),handlerNotFound(NULL),logger(NULL),logLevel(LogInfo),terminated(false),clientsCount(0)
+Server::Server(int port,const string& ip,int numWorkers):listenerPort(port),listenerIP(ip),listener(port,ip),handler(NULL),handlerNotFound(NULL),logger(NULL),logLevel(LogInfo),terminated(false),workersCount(0)
 {
 	instance=this;
 #ifdef WIN32
@@ -31,6 +31,7 @@ Server::Server(int port,const string& ip):listenerPort(port),listenerIP(ip),list
 	sigprocmask(SIG_BLOCK,&sigset,NULL);
 	signal(SIGPIPE,SIG_IGN);
 #endif
+	StartWorkers(numWorkers);
 }
 
 Server::~Server()
@@ -43,11 +44,18 @@ Server& Server::Instance()
 	return *instance;
 }
 
-void client_thread(void* d)
+void worker_thread(void* d)
 {
-	Socket* socket=reinterpret_cast<Socket*>(d);
-	Client client(socket);
-	client.Run();
+	Server::Instance().OnWorkerAttach();
+	for(;;)
+	{
+		Socket* socket=Server::Instance().tasks.Pop();
+		if(!socket)
+			break;
+		Client client(socket);
+		client.Run();
+	}
+	Server::Instance().OnWorkerDetach();
 }
 
 void Server::Run()
@@ -63,7 +71,13 @@ void Server::Run()
 		if(listener.Wait(500))
 		{
 			Socket* socket=listener.Accept();
-			Thread::StartThread(client_thread,socket);
+			if(workersCount!=0)
+				tasks.Push(socket);
+			else
+			{
+				Client client(socket);
+				client.Run();
+			}
 		}
 #ifndef WIN32
 		sigpending(&sigset);
@@ -71,8 +85,11 @@ void Server::Run()
 			terminated=true;
 #endif
 	}
-	LogWrite(LogInfo,"Waiting for client threads...");
-	while(clientsCount!=0)
+	LogWrite(LogInfo,"Waiting for worker threads...");
+	int t=workersCount;
+	for(int i=0;i<t;i++)
+		tasks.Push(NULL);
+	while(workersCount!=0)
 	{
 	}
 }
@@ -117,18 +134,18 @@ void Server::RegisterNotFoundHandler(INotFoundHandler* handlerNotFound)
 	this->handlerNotFound=handlerNotFound;
 }
 
-void Server::OnClientAttach()
+void Server::OnWorkerAttach()
 {
-	clientsMutex.Lock();
-	clientsCount++;
-	clientsMutex.Unlock();
+	workersMutex.Lock();
+	workersCount++;
+	workersMutex.Unlock();
 }
 
-void Server::OnClientDetach()
+void Server::OnWorkerDetach()
 {
-	clientsMutex.Lock();
-	clientsCount--;
-	clientsMutex.Unlock();
+	workersMutex.Lock();
+	workersCount--;
+	workersMutex.Unlock();
 }
 
 void Server::ServeFile(const string& fileName,HttpRequest* request,HttpResponse* response,bool download)
@@ -205,10 +222,12 @@ void Server::LogWrite(LogMessageType type,const string& message)
 {
 	if(type<logLevel)
 		return;
+	logMutex.Lock();
 	if(logger!=NULL)
 		logger->LogWrite(type,message);
 	else
 		cout<<message<<endl;
+	logMutex.Unlock();
 }
 
 void Server::RegisterLogger(ILogger* logger)
@@ -219,4 +238,10 @@ void Server::RegisterLogger(ILogger* logger)
 void Server::SetLogLevel(LogMessageType logLevel)
 {
 	this->logLevel=logLevel;
+}
+
+void Server::StartWorkers(int numWorkers)
+{
+	for(int i=0;i<numWorkers;i++)
+		Thread::StartThread(worker_thread,NULL);
 }

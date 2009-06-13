@@ -9,7 +9,7 @@ FileServerConfig::FileServerConfig():ip("0.0.0.0"),port(8080),rootDir("."),htmlT
 		if((!line.empty())&&(line[0]!='#'))
 		{
 			vector<string> elements=Util::Extract(line);
-			if(elements[0]=="IP")
+			if(elements[0]=="ListenIP")
 			{
 				ip=elements[1];
 				continue;
@@ -42,12 +42,34 @@ FileServerConfig::FileServerConfig():ip("0.0.0.0"),port(8080),rootDir("."),htmlT
 				bindAs=elements[2];
 				continue;
 			}
+			if(elements[0]=="LogLevel")
+			{
+				if(elements[1]=="Debug")
+					logLevel=LogDebug;
+				if(elements[1]=="Verbose")
+					logLevel=LogVerbose;
+				if(elements[1]=="Info")
+					logLevel=LogInfo;
+				if(elements[1]=="Warning")
+					logLevel=LogWarning;
+				if(elements[1]=="Error")
+					logLevel=LogError;
+				if(elements[1]=="Disabled")
+					logLevel=LogDisabled;
+				continue;
+			}
+			if(elements[0]=="NumWorkers")
+			{
+				numWorkers=atoi(elements[1].c_str());
+				continue;
+			}
 		}
 	}
 }
 
-FileServer::FileServer():server(config.port,config.ip)
+FileServer::FileServer():server(config.port,config.ip,config.numWorkers)
 {
+	server.SetLogLevel(config.logLevel);
 	server.RegisterHandler(this);
 	server.RegisterNotFoundHandler(this);
 	htmlTemplate=Util::ReadFile(config.htmlTemplate);

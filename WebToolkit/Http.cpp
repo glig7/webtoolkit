@@ -34,18 +34,10 @@ void HttpRequest::ParseLine(const string& line)
 	{
 		size_t eqpos=line.find('=');
 		size_t mpos=line.find('-');
-#ifdef WIN32
-		rangeFrom=_atoi64(line.substr(eqpos+1,mpos-eqpos-1).c_str());
-#else
 		rangeFrom=atoll(line.substr(eqpos+1,mpos-eqpos-1).c_str());
-#endif
 		string t=line.substr(mpos+1);
 		if(!t.empty())
-#ifdef WIN32
-			rangeTo=_atoi64(t.c_str());
-#else
-		rangeTo=atoll(t.c_str());
-#endif
+			rangeTo=atoll(t.c_str());
 	}
 }
 

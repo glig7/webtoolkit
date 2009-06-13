@@ -31,13 +31,15 @@ private:
 	INotFoundHandler* handlerNotFound;
 	ILogger* logger;
 	LogMessageType logLevel;
-	Mutex clientsMutex;
-	volatile int clientsCount;
+	Mutex workersMutex;
+	volatile int workersCount;
 	int listenerPort;
 	string listenerIP;
+	Mutex logMutex;
 public:
 	volatile bool terminated;
-	Server(int port,const string& ip);
+	ThreadTasks<Socket*> tasks;
+	Server(int port,const string& ip,int numWorkers);
 	~Server();
 	static Server& Instance();
 	void Run();
@@ -48,9 +50,10 @@ public:
 	void LogWrite(LogMessageType type,const string& message);
 	void RegisterLogger(ILogger* logger);
 	void SetLogLevel(LogMessageType logLevel);
-	void OnClientAttach();
-	void OnClientDetach();
+	void OnWorkerAttach();
+	void OnWorkerDetach();
 	void ServeFile(const string& fileName,HttpRequest* request,HttpResponse* response,bool download=false);
+	void StartWorkers(int numWorkers);
 };
 
 #endif

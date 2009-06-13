@@ -13,6 +13,7 @@
 #include <fstream>
 #include <vector>
 #include <algorithm>
+#include <queue>
 
 using namespace std;
 
@@ -25,6 +26,10 @@ typedef basic_string<wchar_t> wstring;
 
 typedef long long i64;
 typedef unsigned long long ui64;
+
+#ifdef WIN32
+#define atoll _atoi64
+#endif
 
 #endif
 

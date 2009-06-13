@@ -81,3 +81,39 @@ void Mutex::Unlock()
 #endif
 }
 
+CondVar::CondVar()
+{
+#ifdef WIN32
+	condVarEvent=CreateEvent(NULL,FALSE,FALSE,NULL);
+#else
+	pthread_cond_init(&condVar,NULL);
+#endif
+}
+
+CondVar::~CondVar()
+{
+#ifdef WIN32
+	CloseHandle(condVarEvent);
+#else
+	pthread_cond_destroy(&condVar);
+#endif
+}
+
+void CondVar::Wait(Mutex& externalMutex)
+{
+#ifdef WIN32
+	SignalObjectAndWait(externalMutex.mutex,condVarEvent,INFINITE,FALSE);
+	externalMutex.Lock();
+#else
+	pthread_cond_wait(&condVar,externalMutex.mutex);
+#endif
+}
+
+void CondVar::Signal()
+{
+#ifdef WIN32
+	PulseEvent(condVarEvent);
+#else
+	pthread_cond_signal(&condVar);
+#endif
+}
