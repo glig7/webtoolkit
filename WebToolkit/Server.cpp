@@ -17,7 +17,7 @@ BOOL WINAPI HandlerRoutine(DWORD dwCtrlType)
 #include <signal.h>
 #endif
 
-Server::Server(int port,const string& ip,int numWorkers):listenerPort(port),listenerIP(ip),listener(port,ip),handler(NULL),handlerNotFound(NULL),logger(NULL),logLevel(LogInfo),terminated(false),workersCount(0)
+Server::Server(int port,const string& ip,int numWorkers,LogMessageType initialLogLevel):listenerPort(port),listenerIP(ip),listener(port,ip),handler(NULL),handlerNotFound(NULL),logger(NULL),logLevel(initialLogLevel),terminated(false),workersCount(0)
 {
 	instance=this;
 #ifdef WIN32

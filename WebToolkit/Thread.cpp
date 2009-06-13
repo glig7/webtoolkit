@@ -105,7 +105,7 @@ void CondVar::Wait(Mutex& externalMutex)
 	SignalObjectAndWait(externalMutex.mutex,condVarEvent,INFINITE,FALSE);
 	externalMutex.Lock();
 #else
-	pthread_cond_wait(&condVar,externalMutex.mutex);
+	pthread_cond_wait(&condVar,&externalMutex.mutex);
 #endif
 }
 

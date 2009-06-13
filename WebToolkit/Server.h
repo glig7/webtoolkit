@@ -39,7 +39,7 @@ private:
 public:
 	volatile bool terminated;
 	ThreadTasks<Socket*> tasks;
-	Server(int port,const string& ip,int numWorkers);
+	Server(int port,const string& ip,int numWorkers=4,LogMessageType initialLogLevel=LogInfo);
 	~Server();
 	static Server& Instance();
 	void Run();

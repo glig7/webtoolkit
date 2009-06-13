@@ -67,9 +67,8 @@ FileServerConfig::FileServerConfig():ip("0.0.0.0"),port(8080),rootDir("."),htmlT
 	}
 }
 
-FileServer::FileServer():server(config.port,config.ip,config.numWorkers)
+FileServer::FileServer():server(config.port,config.ip,config.numWorkers,config.logLevel)
 {
-	server.SetLogLevel(config.logLevel);
 	server.RegisterHandler(this);
 	server.RegisterNotFoundHandler(this);
 	htmlTemplate=Util::ReadFile(config.htmlTemplate);
