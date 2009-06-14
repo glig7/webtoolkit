@@ -64,7 +64,7 @@ public:
 	T Pop()
 	{
 		queueMutex.Lock();
-		if(q.empty())
+		while(q.empty())
 			notEmpty.Wait(queueMutex);
 		T e=q.front();
 		q.pop();
