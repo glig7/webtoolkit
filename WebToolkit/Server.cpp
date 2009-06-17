@@ -3,7 +3,7 @@
 #include "Util.h"
 #include "File.h"
 
-Server* Singleton<Server>::instance=NULL;
+template<> Server* Singleton<Server>::instance=NULL;
 
 #ifdef WIN32
 #include <windows.h>

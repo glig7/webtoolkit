@@ -1,6 +1,6 @@
 #include "Main.h"
 
-SimpleBlog* Singleton<SimpleBlog>::instance=NULL;
+template<> SimpleBlog* Singleton<SimpleBlog>::instance=NULL;
 
 void Index::Handle(HttpRequest* request,HttpResponse* response)
 {
