@@ -3,7 +3,7 @@
 #include "Util.h"
 #include "File.h"
 
-Server* Server::instance=NULL;
+Server* Singleton<Server>::instance=NULL;
 
 #ifdef WIN32
 #include <windows.h>
@@ -17,7 +17,7 @@ BOOL WINAPI HandlerRoutine(DWORD dwCtrlType)
 #include <signal.h>
 #endif
 
-Server::Server(int port,const string& ip,int numWorkers,LogMessageType initialLogLevel):listenerPort(port),listenerIP(ip),listener(port,ip),handler(NULL),handlerNotFound(NULL),logger(NULL),logLevel(initialLogLevel),terminated(false),workersCount(0)
+Server::Server(int port,const string& ip,int numWorkers,LogMessageType initialLogLevel):listenerPort(port),listenerIP(ip),listener(port,ip),handler(NULL),handlerNotFound(NULL),handlerError(NULL),logger(NULL),logLevel(initialLogLevel),terminated(false),workersCount(0)
 {
 	instance=this;
 #ifdef WIN32
@@ -37,11 +37,6 @@ Server::Server(int port,const string& ip,int numWorkers,LogMessageType initialLo
 Server::~Server()
 {
 	LogWrite(LogInfo,"Server stopped");
-}
-
-Server& Server::Instance()
-{
-	return *instance;
 }
 
 void worker_thread(void* d)
@@ -106,9 +101,14 @@ void Server::Handle(HttpRequest* request,HttpResponse* response)
 		{
 			response->SetResultError();
 			response->Clean();
-			response->Write("<html><body><h1>500 Internal Server Error</h1><p>Exception: ");
-			response->Write(e.what());
-			response->Write("</p</body></html>");
+			if(handlerError!=NULL)
+				handlerError->HandleError(e,response);
+			else
+			{
+				response->Write("<html><body><h1>500 Internal Server Error</h1><p>Exception: ");
+				response->Write(e.what());
+				response->Write("</p</body></html>");
+			}
 		}
 	}
 	else
@@ -132,6 +132,11 @@ void Server::RegisterHandler(IHttpRequestHandler* handler)
 void Server::RegisterNotFoundHandler(INotFoundHandler* handlerNotFound)
 {
 	this->handlerNotFound=handlerNotFound;
+}
+
+void Server::RegisterErrorHandler(IErrorHandler* handlerError)
+{
+	this->handlerError=handlerError;
 }
 
 void Server::OnWorkerAttach()

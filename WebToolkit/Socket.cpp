@@ -79,6 +79,20 @@ string Socket::Read()
 	return string(buf,bytesRead);
 }
 
+string Socket::BufferedRead(int len)
+{
+	while(linebuf.length()<static_cast<size_t>(len))
+	{
+		string t=Read();
+		if(t.empty())
+			throw runtime_error("Failed to read specified number of bytes");
+		linebuf+=t;
+	}
+	string st=linebuf.substr(0,len);
+	linebuf.erase(0,len);
+	return st;
+}
+
 bool Socket::WaitForLine(int timeout)
 {
 	int newline=linebuf.find('\n');

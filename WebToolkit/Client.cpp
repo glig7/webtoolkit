@@ -27,6 +27,11 @@ void Client::Run()
 				break;
 			request.ParseLine(st);
 		}
+		if(request.postContentLength!=0)
+		{
+			request.postContent=socket->BufferedRead(request.postContentLength);
+			request.ParseParameters(request.postContent);
+		}
 		ostringstream r;
 		r<<socket->remoteIP<<(request.isPost?" POST ":" GET ")<<request.resource;
 		Server::Instance().LogWrite(LogInfo,r.str());

@@ -183,6 +183,10 @@ string Util::URLDecode(const string& st)
 			r<<static_cast<char>((hex_conv(*(ptr+1))<<4)+(hex_conv(*(ptr+2))));
 			ptr+=3;
 			break;
+		case '+':
+			r<<' ';
+			ptr++;
+			break;
 		default:
 			r<<*ptr;
 			ptr++;

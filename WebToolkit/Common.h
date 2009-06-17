@@ -14,6 +14,7 @@
 #include <vector>
 #include <algorithm>
 #include <queue>
+#include <map>
 
 using namespace std;
 
@@ -30,6 +31,8 @@ typedef unsigned long long ui64;
 #ifdef WIN32
 #define atoll _atoi64
 #endif
+
+#include "Singleton.h"
 
 #endif
 

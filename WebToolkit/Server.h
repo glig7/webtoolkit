@@ -22,13 +22,13 @@ public:
 	virtual void LogWrite(LogMessageType type,const string& message)=0;
 };
 
-class Server
+class Server:public Singleton<Server>
 {
 private:
-	static Server* instance;
 	Listener listener;
 	IHttpRequestHandler* handler;
 	INotFoundHandler* handlerNotFound;
+	IErrorHandler* handlerError;
 	ILogger* logger;
 	LogMessageType logLevel;
 	Mutex workersMutex;
@@ -41,12 +41,12 @@ public:
 	ThreadTasks<Socket*> tasks;
 	Server(int port,const string& ip,int numWorkers=4,LogMessageType initialLogLevel=LogInfo);
 	~Server();
-	static Server& Instance();
 	void Run();
 	void Handle(HttpRequest* request,HttpResponse* response);
 	void HandleNotFound(HttpResponse* response);
 	void RegisterHandler(IHttpRequestHandler* handler);
 	void RegisterNotFoundHandler(INotFoundHandler* handlerNotFound);
+	void RegisterErrorHandler(IErrorHandler* handlerError);
 	void LogWrite(LogMessageType type,const string& message);
 	void RegisterLogger(ILogger* logger);
 	void SetLogLevel(LogMessageType logLevel);

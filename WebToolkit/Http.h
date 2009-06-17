@@ -11,8 +11,14 @@ public:
 	string clientIP;
 	int clientPort;
 	i64 rangeFrom,rangeTo;
+	map<string,string> parameters;
+	int postContentLength;
+	string postContent;
 	HttpRequest();
 	void ParseLine(const string& line);
+	void ParseParameters(const string& st);
+	void ParseURIAsParameters();
+	void ParseHostAsParameters();
 };
 
 class HttpResponse
@@ -53,6 +59,50 @@ class INotFoundHandler
 {
 public:
 	virtual void HandleNotFound(HttpResponse* response)=0;
+};
+
+class IErrorHandler
+{
+public:
+	virtual void HandleError(const exception& e,HttpResponse* response)=0;
+};
+
+class HostDispatcher:public IHttpRequestHandler
+{
+protected:
+	map<string,IHttpRequestHandler*> dispatchMap;
+	IHttpRequestHandler* defaultHandler;
+	bool autoParse;
+public:
+	HostDispatcher();
+	void AddMapping(const string& st,IHttpRequestHandler* handler);
+	void SetDefaultHandler(IHttpRequestHandler* handler);
+	void EnableAutoParse();
+	void Handle(HttpRequest* request,HttpResponse* response);
+};
+
+class URIDispatcher:public IHttpRequestHandler
+{
+protected:
+	map<string,IHttpRequestHandler*> dispatchMap;
+	IHttpRequestHandler* defaultHandler;
+	bool autoParse;
+public:
+	URIDispatcher();
+	void AddMapping(const string& st,IHttpRequestHandler* handler);
+	void SetDefaultHandler(IHttpRequestHandler* handler);
+	void EnableAutoParse();
+	void Handle(HttpRequest* request,HttpResponse* response);
+};
+
+class RootIndexRedirector:public IHttpRequestHandler
+{
+protected:
+	string indexURI;
+public:
+	RootIndexRedirector();
+	void SetIndexURI(const string& uri);
+	void Handle(HttpRequest* request,HttpResponse* response);
 };
 
 #endif

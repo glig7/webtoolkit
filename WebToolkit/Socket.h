@@ -22,6 +22,7 @@ public:
 	Socket(int sock);
 	~Socket();
 	string Read();
+	string BufferedRead(int len);
 	bool WaitForLine(int timeout);
 	string ReadLine();
 	void Write(const char* buf,int len);
