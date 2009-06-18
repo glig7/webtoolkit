@@ -3,6 +3,10 @@
 #include "Util.h"
 #include "File.h"
 
+
+#include "Logger.h"
+
+
 template<> Server* Singleton<Server>::instance=NULL;
 
 #ifdef WIN32
@@ -17,7 +21,7 @@ BOOL WINAPI HandlerRoutine(DWORD dwCtrlType)
 #include <signal.h>
 #endif
 
-Server::Server(int port,const string& ip,int numWorkers,LogMessageType initialLogLevel):listenerPort(port),listenerIP(ip),listener(port,ip),handler(NULL),handlerNotFound(NULL),handlerError(NULL),logger(NULL),logLevel(initialLogLevel),terminated(false),workersCount(0)
+Server::Server(int port,const string& ip,int numWorkers):listenerPort(port),listenerIP(ip),listener(port,ip),handler(NULL),handlerNotFound(NULL),handlerError(NULL),terminated(false),workersCount(0)
 {
 	instance=this;
 #ifdef WIN32
@@ -36,7 +40,7 @@ Server::Server(int port,const string& ip,int numWorkers,LogMessageType initialLo
 
 Server::~Server()
 {
-	LogWrite(LogInfo,"Server stopped");
+	LOG( LogInfo ) << "Server stopped";
 }
 
 void worker_thread(void* d)
@@ -55,9 +59,8 @@ void worker_thread(void* d)
 
 void Server::Run()
 {
-	ostringstream r;
-	r<<"Started server on "<<listenerIP<<":"<<listenerPort;
-	LogWrite(LogInfo,r.str());
+
+	LOG( LogInfo ) << "Started server on " << listenerIP << ":" << listenerPort;
 #ifndef WIN32
 	sigset_t sigset;
 #endif
@@ -80,7 +83,7 @@ void Server::Run()
 			terminated=true;
 #endif
 	}
-	LogWrite(LogInfo,"Waiting for worker threads...");
+	LOG( LogInfo ) << "Waiting for worker threads...";
 	int t=workersCount;
 	for(int i=0;i<t;i++)
 		tasks.Push(NULL);
@@ -223,27 +226,6 @@ void Server::ServeFile(const string& fileName,HttpRequest* request,HttpResponse*
 	}
 }
 
-void Server::LogWrite(LogMessageType type,const string& message)
-{
-	if(type<logLevel)
-		return;
-	logMutex.Lock();
-	if(logger!=NULL)
-		logger->LogWrite(type,message);
-	else
-		cout<<message<<endl;
-	logMutex.Unlock();
-}
-
-void Server::RegisterLogger(ILogger* logger)
-{
-	this->logger=logger;
-}
-
-void Server::SetLogLevel(LogMessageType logLevel)
-{
-	this->logLevel=logLevel;
-}
 
 void Server::StartWorkers(int numWorkers)
 {

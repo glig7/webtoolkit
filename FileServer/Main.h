@@ -13,7 +13,6 @@ public:
 	string favIcon;
 	string bindWhat;
 	string bindAs;
-	LogMessageType logLevel;
 	int numWorkers;
 	FileServerConfig();
 };

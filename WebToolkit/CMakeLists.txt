@@ -1,3 +1,4 @@
+cmake_minimum_required(VERSION 2.6)
 file(GLOB_RECURSE SOURCES *.cpp *.h)
 add_library(WebToolkit ${SOURCES})
 if(UNIX)

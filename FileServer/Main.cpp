@@ -1,5 +1,8 @@
 #include "Main.h"
 
+#include "Logger.h"
+
+
 FileServerConfig::FileServerConfig():ip("0.0.0.0"),port(8080),rootDir("."),htmlTemplate("list.html")
 {
 	File in("FileServer.conf",false);
@@ -45,17 +48,15 @@ FileServerConfig::FileServerConfig():ip("0.0.0.0"),port(8080),rootDir("."),htmlT
 			if(elements[0]=="LogLevel")
 			{
 				if(elements[1]=="Debug")
-					logLevel=LogDebug;
+					Log::ReportingLevel() = LogDebug;
 				if(elements[1]=="Verbose")
-					logLevel=LogVerbose;
+					Log::ReportingLevel() = LogVerbose;
 				if(elements[1]=="Info")
-					logLevel=LogInfo;
+					Log::ReportingLevel() = LogInfo;
 				if(elements[1]=="Warning")
-					logLevel=LogWarning;
+					Log::ReportingLevel() = LogWarning;
 				if(elements[1]=="Error")
-					logLevel=LogError;
-				if(elements[1]=="Disabled")
-					logLevel=LogDisabled;
+					Log::ReportingLevel() = LogError;
 				continue;
 			}
 			if(elements[0]=="NumWorkers")
@@ -67,7 +68,7 @@ FileServerConfig::FileServerConfig():ip("0.0.0.0"),port(8080),rootDir("."),htmlT
 	}
 }
 
-FileServer::FileServer():server(config.port,config.ip,config.numWorkers,config.logLevel)
+FileServer::FileServer():server(config.port,config.ip,config.numWorkers)
 {
 	server.RegisterHandler(this);
 	server.RegisterNotFoundHandler(this);

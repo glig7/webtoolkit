@@ -6,21 +6,6 @@
 #include "Http.h"
 #include "Thread.h"
 
-enum LogMessageType
-{
-	LogDebug,
-	LogVerbose,
-	LogInfo,
-	LogWarning,
-	LogError,
-	LogDisabled
-};
-
-class ILogger
-{
-public:
-	virtual void LogWrite(LogMessageType type,const string& message)=0;
-};
 
 class Server:public Singleton<Server>
 {
@@ -29,8 +14,6 @@ private:
 	IHttpRequestHandler* handler;
 	INotFoundHandler* handlerNotFound;
 	IErrorHandler* handlerError;
-	ILogger* logger;
-	LogMessageType logLevel;
 	Mutex workersMutex;
 	volatile int workersCount;
 	int listenerPort;
@@ -39,7 +22,7 @@ private:
 public:
 	volatile bool terminated;
 	ThreadTasks<Socket*> tasks;
-	Server(int port,const string& ip,int numWorkers=4,LogMessageType initialLogLevel=LogInfo);
+	Server(int port,const string& ip,int numWorkers=4);
 	~Server();
 	void Run();
 	void Handle(HttpRequest* request,HttpResponse* response);
@@ -47,9 +30,6 @@ public:
 	void RegisterHandler(IHttpRequestHandler* handler);
 	void RegisterNotFoundHandler(INotFoundHandler* handlerNotFound);
 	void RegisterErrorHandler(IErrorHandler* handlerError);
-	void LogWrite(LogMessageType type,const string& message);
-	void RegisterLogger(ILogger* logger);
-	void SetLogLevel(LogMessageType logLevel);
 	void OnWorkerAttach();
 	void OnWorkerDetach();
 	void ServeFile(const string& fileName,HttpRequest* request,HttpResponse* response,bool download=false);

@@ -1,6 +1,8 @@
 #ifndef _THREAD_H
 #define	_THREAD_H
 
+#include <queue>
+
 #ifdef WIN32
 #include <windows.h>
 #else
@@ -13,6 +15,7 @@ class Thread
 {
 public:
 	static void StartThread(ThreadProc threadProc,void* arg);
+    static unsigned long GetCurrentThreadId();
 };
 
 class Mutex
@@ -50,7 +53,7 @@ template<class T>
 class ThreadTasks
 {
 private:
-	queue<T> q;
+	std::queue<T> q;
 	Mutex queueMutex;
 	CondVar notEmpty;
 public:

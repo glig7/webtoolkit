@@ -1,6 +1,7 @@
 #include "Common.h"
 #include "Client.h"
 #include "Server.h"
+#include "Logger.h"
 
 Client::Client(Socket* socket)
 {
@@ -32,15 +33,15 @@ void Client::Run()
 			request.postContent=socket->BufferedRead(request.postContentLength);
 			request.ParseParameters(request.postContent);
 		}
-		ostringstream r;
-		r<<socket->remoteIP<<(request.isPost?" POST ":" GET ")<<request.resource;
-		Server::Instance().LogWrite(LogInfo,r.str());
+		LOG( LogInfo ) << socket->remoteIP
+		               << (request.isPost ? " POST " : " GET ")
+		               << request.resource;
 		Server::Instance().Handle(&request,this);
 		Send();
 	}
 	catch(exception& e)
 	{
-		Server::Instance().LogWrite(LogError,e.what());
+		LOG( LogError ) << e.what();
 	}
 }
 

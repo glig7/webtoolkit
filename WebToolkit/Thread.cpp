@@ -45,6 +45,14 @@ void Thread::StartThread(ThreadProc threadProc,void* arg)
 #endif
 }
 
+unsigned long Thread::GetCurrentThreadId() {
+#ifdef WIN32
+	return (unsigned long) ::GetCurrentThreadId();
+#else
+    return (unsigned long) pthread_self();
+#endif
+}
+
 Mutex::Mutex()
 {
 #ifdef WIN32
