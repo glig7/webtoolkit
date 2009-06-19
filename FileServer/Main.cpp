@@ -57,6 +57,8 @@ FileServerConfig::FileServerConfig():ip("0.0.0.0"),port(8080),rootDir("."),htmlT
 					Log::ReportingLevel() = LogWarning;
 				if(elements[1]=="Error")
 					Log::ReportingLevel() = LogError;
+				if(elements[1]=="Disabled")
+					Log::ReportingLevel() = LogDisabled;
 				continue;
 			}
 			if(elements[0]=="NumWorkers")

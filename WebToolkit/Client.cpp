@@ -33,15 +33,13 @@ void Client::Run()
 			request.postContent=socket->BufferedRead(request.postContentLength);
 			request.ParseParameters(request.postContent);
 		}
-		LOG( LogInfo ) << socket->remoteIP
-		               << (request.isPost ? " POST " : " GET ")
-		               << request.resource;
+		LOG(LogInfo)<<socket->remoteIP<<(request.isPost?" POST ":" GET ")<<request.resource;
 		Server::Instance().Handle(&request,this);
 		Send();
 	}
 	catch(exception& e)
 	{
-		LOG( LogError ) << e.what();
+		LOG(LogError)<<e.what();
 	}
 }
 

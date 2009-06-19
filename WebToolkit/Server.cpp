@@ -2,10 +2,7 @@
 #include "Server.h"
 #include "Util.h"
 #include "File.h"
-
-
 #include "Logger.h"
-
 
 template<> Server* Singleton<Server>::instance=NULL;
 
@@ -40,7 +37,7 @@ Server::Server(int port,const string& ip,int numWorkers):listenerPort(port),list
 
 Server::~Server()
 {
-	LOG( LogInfo ) << "Server stopped";
+	LOG(LogInfo)<<"Server stopped";
 }
 
 void worker_thread(void* d)
@@ -59,8 +56,7 @@ void worker_thread(void* d)
 
 void Server::Run()
 {
-
-	LOG( LogInfo ) << "Started server on " << listenerIP << ":" << listenerPort;
+	LOG(LogInfo)<<"Started server on "<<listenerIP<<":"<<listenerPort;
 #ifndef WIN32
 	sigset_t sigset;
 #endif
@@ -83,7 +79,7 @@ void Server::Run()
 			terminated=true;
 #endif
 	}
-	LOG( LogInfo ) << "Waiting for worker threads...";
+	LOG(LogInfo)<<"Waiting for worker threads...";
 	int t=workersCount;
 	for(int i=0;i<t;i++)
 		tasks.Push(NULL);
