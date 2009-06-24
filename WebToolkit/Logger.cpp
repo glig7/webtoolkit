@@ -2,8 +2,8 @@
 #include "Logger.h"
 
 Mutex Log::mutex;
-FILE* Log::logFile=stderr;
 LogLevel Log::reportingLevel=LogInfo;
+ILogHandler* Log::logHandler=NULL;
 
 const char* const Log::names[]={
 	"",
@@ -14,16 +14,6 @@ const char* const Log::names[]={
 	"DEBG"
 };
 
-FILE*& Log::LogFile()
-{
-    return logFile;
-}
-
-LogLevel& Log::ReportingLevel()
-{
-    return reportingLevel;
-}
-
 Log::Log()
 {
 }
@@ -31,15 +21,25 @@ Log::Log()
 Log::~Log()
 {
 	os<<endl;
-	mutex.Lock();
-	fputs(os.str().c_str(),logFile);
-	fflush(logFile);
-	mutex.Unlock();
+	MutexLock lock(mutex);
+	if(logHandler==NULL)
+		fputs(os.str().c_str(),stderr);
+	else
+		logHandler->LogWrite(os.str());
 }
 
-std::ostringstream& Log::Get( LogLevel level )
+void Log::SetReportingLevel(LogLevel logLevel)
 {
-    const size_t tabspace=(level>LogVerbose)?(level-LogVerbose):0;
-    os<<names[level]<<"("<<hex<<Thread::GetCurrentThreadId()<<dec<<"): "<<string(tabspace,'\t');
+    reportingLevel=logLevel;
+}
+
+std::ostringstream& Log::Get(LogLevel level)
+{
+    os<<names[level]<<"("<<hex<<Thread::GetCurrentThreadId()<<dec<<"): ";
     return os;
+}
+
+void Log::SetLogHandler(ILogHandler* handler)
+{
+	logHandler=handler;
 }

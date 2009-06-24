@@ -49,6 +49,21 @@ public:
 	void Signal();
 };
 
+class MutexLock
+{
+private:
+	Mutex& m;
+public:
+	MutexLock(Mutex& mutex):m(mutex)
+	{
+		m.Lock();
+	}
+	~MutexLock()
+	{
+		m.Unlock();
+	}
+};
+
 template<class T>
 class ThreadTasks
 {

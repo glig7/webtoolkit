@@ -3,8 +3,8 @@
 
 #include "Thread.h"
 
-#define LOG( level ) \
-	if((level)<=Log::ReportingLevel()) \
+#define LOG(level) \
+	if((level)<=Log::reportingLevel) \
 		Log().Get((level))
 
 enum LogLevel
@@ -17,25 +17,26 @@ enum LogLevel
 	LogDebug
 };
 
-class Log
+class ILogHandler
 {
 public:
+	virtual void LogWrite(const string& st)=0;
+};
+
+class Log
+{
+private:
+	static const char* const names[];
+	static Mutex mutex;
+	static ILogHandler* logHandler;
+	ostringstream os;
+public:
+	static LogLevel reportingLevel;
 	Log();
 	~Log();
 	std::ostringstream& Get(LogLevel level=LogInfo);
-public:
-	static LogLevel& ReportingLevel();
-	static FILE*& LogFile();
-private:
-	static FILE* logFile;
-	static LogLevel reportingLevel;
-	static const char* const names[];
-	static Mutex mutex;
-private:
-	Log(const Log&);
-	Log& operator=(const Log&);
-private:
-	ostringstream os;
+	static void SetReportingLevel(LogLevel logLevel);
+	static void SetLogHandler(ILogHandler* handler);
 };
 
 #endif

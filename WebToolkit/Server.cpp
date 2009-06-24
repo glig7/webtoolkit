@@ -140,16 +140,14 @@ void Server::RegisterErrorHandler(IErrorHandler* handlerError)
 
 void Server::OnWorkerAttach()
 {
-	workersMutex.Lock();
+	MutexLock lock(workersMutex);
 	workersCount++;
-	workersMutex.Unlock();
 }
 
 void Server::OnWorkerDetach()
 {
-	workersMutex.Lock();
+	MutexLock lock(workersMutex);
 	workersCount--;
-	workersMutex.Unlock();
 }
 
 void Server::ServeFile(const string& fileName,HttpRequest* request,HttpResponse* response,bool download)

@@ -48,17 +48,17 @@ FileServerConfig::FileServerConfig():ip("0.0.0.0"),port(8080),rootDir("."),htmlT
 			if(elements[0]=="LogLevel")
 			{
 				if(elements[1]=="Debug")
-					Log::ReportingLevel() = LogDebug;
+					Log::SetReportingLevel(LogDebug);
 				if(elements[1]=="Verbose")
-					Log::ReportingLevel() = LogVerbose;
+					Log::SetReportingLevel(LogVerbose);
 				if(elements[1]=="Info")
-					Log::ReportingLevel() = LogInfo;
+					Log::SetReportingLevel(LogInfo);
 				if(elements[1]=="Warning")
-					Log::ReportingLevel() = LogWarning;
+					Log::SetReportingLevel(LogWarning);
 				if(elements[1]=="Error")
-					Log::ReportingLevel() = LogError;
+					Log::SetReportingLevel(LogError);
 				if(elements[1]=="Disabled")
-					Log::ReportingLevel() = LogDisabled;
+					Log::SetReportingLevel(LogDisabled);
 				continue;
 			}
 			if(elements[0]=="NumWorkers")

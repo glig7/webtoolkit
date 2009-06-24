@@ -18,7 +18,6 @@ private:
 	volatile int workersCount;
 	int listenerPort;
 	string listenerIP;
-	Mutex logMutex;
 public:
 	volatile bool terminated;
 	ThreadTasks<Socket*> tasks;
