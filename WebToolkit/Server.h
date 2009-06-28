@@ -6,6 +6,11 @@
 #include "Http.h"
 #include "Thread.h"
 
+struct Session
+{
+	time_t whenToDelete;
+	HttpSessionObject* object;
+};
 
 class Server:public Singleton<Server>
 {
@@ -18,7 +23,11 @@ private:
 	volatile int workersCount;
 	int listenerPort;
 	string listenerIP;
+	Mutex sessionsMutex;
+	map<string,Session> sessions;
+	int gcCounter;
 public:
+	int gcPeriod,gcMaxLifeTime;
 	volatile bool terminated;
 	ThreadTasks<Socket*> tasks;
 	Server(int port,const string& ip,int numWorkers=4);
@@ -33,6 +42,8 @@ public:
 	void OnWorkerDetach();
 	void ServeFile(const string& fileName,HttpRequest* request,HttpResponse* response,bool download=false);
 	void StartWorkers(int numWorkers);
+	void StartSession(HttpSessionObject* sessionObject,HttpRequest* request,HttpResponse* response);
+	HttpSessionObject* GetSessionObject(const string& token);
 };
 
 #endif

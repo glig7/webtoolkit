@@ -344,6 +344,29 @@ time_t Util::ParseHTTPTime(const string& httpTime)
 	return mktime(&tms);
 }
 
+string Util::Timestamp(time_t t)
+{
+	ostringstream r;
+	tm* tms=localtime(&t);
+	r<<tms->tm_year+1900<<"/";
+	if(tms->tm_mon<10)
+		r<<"0";
+	r<<tms->tm_mon<<"/";
+	if(tms->tm_mday<10)
+		r<<"0";
+	r<<tms->tm_mday<<" ";
+	if(tms->tm_hour<10)
+		r<<"0";
+	r<<tms->tm_hour<<":";
+	if(tms->tm_min<10)
+		r<<"0";
+	r<<tms->tm_min<<":";
+	if(tms->tm_sec<10)
+		r<<"0";
+	r<<tms->tm_sec;
+	return r.str();
+}
+
 string Util::UTF8Encode(const wstring& st)
 {
 	ostringstream r;
@@ -398,3 +421,18 @@ wstring Util::UTF8Decode(const string& st)
 	return r;
 }
 
+void Util::Trim(string& st)
+{
+	while((!st.empty())&&((st[0]==' ')||(st[0]=='\t')||(st[0]=='\n')||(st[0]=='\r')))
+		st.erase(0,1);
+	while((!st.empty())&&((st[st.size()-1]==' ')||(st[st.size()-1]=='\t')||(st[st.size()-1]=='\n')||(st[st.size()-1]=='\r')))
+		st.erase(st.size()-1,1);
+}
+
+string Util::GenerateRandomString(int len)
+{
+	string r;
+	for(int i=0;i<len;i++)
+		r+='a'+(rand()%('z'-'a'+1));
+	return r;
+}

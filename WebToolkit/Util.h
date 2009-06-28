@@ -48,6 +48,9 @@ public:
 	static time_t ParseHTTPTime(const string& httpTime);
 	static string UTF8Encode(const wstring& st);
 	static wstring UTF8Decode(const string& st);
+	static void Trim(string& st);
+	static string GenerateRandomString(int len);
+	static string Timestamp(time_t t);
 };
 
 #endif

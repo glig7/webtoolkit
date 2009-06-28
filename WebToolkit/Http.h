@@ -1,6 +1,12 @@
 #ifndef _HTTP_H
 #define	_HTTP_H
 
+class HttpSessionObject
+{
+public:
+	virtual ~HttpSessionObject()=0;
+};
+
 class HttpRequest
 {
 public:
@@ -12,13 +18,23 @@ public:
 	int clientPort;
 	i64 rangeFrom,rangeTo;
 	map<string,string> parameters;
+	map<string,string> cookies;
 	int postContentLength;
 	string postContent;
+	HttpSessionObject* sessionObject;
 	HttpRequest();
 	void ParseLine(const string& line);
 	void ParseParameters(const string& st);
 	void ParseURIAsParameters();
 	void ParseHostAsParameters();
+	void ParseCookies(const string& st);
+};
+
+struct Cookie
+{
+	string name;
+	string value;
+	int expireTime;
 };
 
 class HttpResponse
@@ -32,6 +48,7 @@ private:
 	i64 rangeFrom,rangeTo,rangeTotal;
 	ostringstream body;
 	time_t expireTime;
+	vector<Cookie> cookies;
 public:
 	HttpResponse();
 	void SetResultNotFound();
@@ -47,6 +64,7 @@ public:
 	void Clean();
 	void SetContentRange(i64 from,i64 to,i64 total);
 	void SetExpires(time_t t);
+	void SetCookie(const string& name,const string& value,int expireTime);
 };
 
 class IHttpRequestHandler

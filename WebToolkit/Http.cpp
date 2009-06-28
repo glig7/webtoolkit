@@ -3,7 +3,11 @@
 #include "Util.h"
 #include "Server.h"
 
-HttpRequest::HttpRequest():rangeFrom(-1),rangeTo(-1),postContentLength(0)
+HttpSessionObject::~HttpSessionObject()
+{
+}
+
+HttpRequest::HttpRequest():rangeFrom(-1),rangeTo(-1),postContentLength(0),sessionObject(NULL)
 {
 }
 
@@ -48,6 +52,8 @@ void HttpRequest::ParseLine(const string& line)
 	}
 	if(line.compare(0,14,"Content-Length")==0)
 		postContentLength=atoi(line.substr(16).c_str());
+	if(line.compare(0,6,"Cookie")==0)
+		ParseCookies(line.substr(8));
 }
 
 void HttpRequest::ParseParameters(const string& st)
@@ -136,6 +142,34 @@ void HttpRequest::ParseHostAsParameters()
 	}
 }
 
+void HttpRequest::ParseCookies(const string& st)
+{
+	string t=st;
+	string p,l,r;
+	size_t sepPos,eqPos;
+	while(!t.empty())
+	{
+		sepPos=t.find(';');
+		if(sepPos!=string::npos)
+		{
+			p=t.substr(0,sepPos);
+			t.erase(0,sepPos+1);
+		}
+		else
+		{
+			p=t;
+			t.clear();
+		}
+		Util::Trim(p);
+		eqPos=p.find('=');
+		if(eqPos==string::npos)
+			throw runtime_error("Malformed cookies in HTTP request");
+		l=Util::StringToLower(p.substr(0,eqPos));
+		r=Util::StringToLower(p.substr(eqPos+1));
+		cookies[l]=r;
+	}
+}
+
 HttpResponse::HttpResponse():result("HTTP/1.0 200 OK"),contentType("text/html"),headersSent(false),contentLength(0),rangeFrom(-1),expireTime(0)
 {
 }
@@ -174,6 +208,23 @@ string HttpResponse::BuildHeader()
 		if(rangeFrom!=-1)
 			r<<"Content-Range: bytes "<<rangeFrom<<"-"<<rangeTo<<"/"<<rangeTotal<<endl;
 		r<<"Content-Type: "<<contentType<<endl;
+	}
+	if(!cookies.empty())
+	{
+		time_t t;
+		time(&t);
+		for(size_t i=0;i<cookies.size();i++)
+		{
+			r<<"Set-Cookie: ";
+			r<<cookies[i].name<<"="<<cookies[i].value;
+			if(cookies[i].expireTime!=0)
+			{
+				r<<"; expires=";
+				time_t t2=t+cookies[i].expireTime;
+				r<<Util::MakeHTTPTime(t2);
+			}
+			r<<"; path=/"<<endl;
+		}
 	}
 	r<<"Connection: close"<<endl;
 	r<<endl;
@@ -230,6 +281,15 @@ void HttpResponse::SetContentRange(i64 from,i64 to,i64 total)
 void HttpResponse::SetExpires(time_t t)
 {
 	expireTime=t;
+}
+
+void HttpResponse::SetCookie(const string& name,const string& value,int expireTime)
+{
+	Cookie cookie;
+	cookie.name=name;
+	cookie.value=value;
+	cookie.expireTime=expireTime;
+	cookies.push_back(cookie);
 }
 
 HostDispatcher::HostDispatcher():defaultHandler(NULL),autoParse(false)

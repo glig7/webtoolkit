@@ -18,8 +18,9 @@ BOOL WINAPI HandlerRoutine(DWORD dwCtrlType)
 #include <signal.h>
 #endif
 
-Server::Server(int port,const string& ip,int numWorkers):listenerPort(port),listenerIP(ip),listener(port,ip),handler(NULL),handlerNotFound(NULL),handlerError(NULL),terminated(false),workersCount(0)
+Server::Server(int port,const string& ip,int numWorkers):listenerPort(port),listenerIP(ip),listener(port,ip),handler(NULL),handlerNotFound(NULL),handlerError(NULL),terminated(false),workersCount(0),gcPeriod(100),gcMaxLifeTime(1800),gcCounter(0)
 {
+	srand(static_cast<unsigned int>(time(NULL)));
 	instance=this;
 #ifdef WIN32
 	SetConsoleCtrlHandler(HandlerRoutine,TRUE);
@@ -37,6 +38,8 @@ Server::Server(int port,const string& ip,int numWorkers):listenerPort(port),list
 
 Server::~Server()
 {
+	for(map<string,Session>::iterator iter=sessions.begin();iter!=sessions.end();iter++)
+		delete iter->second.object;
 	LOG(LogInfo)<<"Server stopped";
 }
 
@@ -220,9 +223,55 @@ void Server::ServeFile(const string& fileName,HttpRequest* request,HttpResponse*
 	}
 }
 
-
 void Server::StartWorkers(int numWorkers)
 {
 	for(int i=0;i<numWorkers;i++)
 		Thread::StartThread(worker_thread,NULL);
+}
+
+void Server::StartSession(HttpSessionObject* sessionObject,HttpRequest* request,HttpResponse* response)
+{
+	MutexLock lock(sessionsMutex);
+	time_t t;
+	time(&t);
+	gcCounter++;
+	if(gcCounter>=gcPeriod)
+	{
+		gcCounter=0;
+		queue<string> q;
+		for(map<string,Session>::iterator iter=sessions.begin();iter!=sessions.end();iter++)
+		{
+			if(t>iter->second.whenToDelete)
+			{
+				delete iter->second.object;
+				q.push(iter->first);
+			}
+		}
+		while(!q.empty())
+		{
+			sessions.erase(q.front());
+			q.pop();
+		}
+	}
+	Session s;
+	s.object=sessionObject;
+	s.whenToDelete=t+gcMaxLifeTime;
+	string token;
+	for(;;)
+	{
+		token=Util::GenerateRandomString(64);
+		if(sessions.find(token)==sessions.end())
+			break;
+	}
+	sessions[token]=s;
+	request->sessionObject=sessionObject;
+	response->SetCookie("sessiontoken",token,0);
+}
+
+HttpSessionObject* Server::GetSessionObject(const string& token)
+{
+	MutexLock lock(sessionsMutex);
+	if(sessions.find(token)==sessions.end())
+		return NULL;
+	return sessions[token].object;
 }

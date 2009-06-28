@@ -1,5 +1,6 @@
 #include "Common.h"
 #include "Logger.h"
+#include "Util.h"
 
 Mutex Log::mutex;
 LogLevel Log::reportingLevel=LogInfo;
@@ -7,11 +8,11 @@ ILogHandler* Log::logHandler=NULL;
 
 const char* const Log::names[]={
 	"",
-	"ERRR",
-	"WARN",
-	"INFO",
-	"VERB",
-	"DEBG"
+	"[error]",
+	"[warning]",
+	"[info]",
+	"[verbose]",
+	"[debug]"
 };
 
 Log::Log()
@@ -35,7 +36,12 @@ void Log::SetReportingLevel(LogLevel logLevel)
 
 std::ostringstream& Log::Get(LogLevel level)
 {
-    os<<names[level]<<"("<<hex<<Thread::GetCurrentThreadId()<<dec<<"): ";
+	time_t t;
+	time(&t);
+	os<<Util::Timestamp(t)<<" ";
+    os<<names[level]<<" ";
+	if(level==LogDebug)
+		os<<"(thread:"<<hex<<Thread::GetCurrentThreadId()<<dec<<") ";
     return os;
 }
 

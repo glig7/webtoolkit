@@ -28,6 +28,8 @@ void Client::Run()
 				break;
 			request.ParseLine(st);
 		}
+		if(request.cookies.find("sessiontoken")!=request.cookies.end())
+			request.sessionObject=Server::Instance().GetSessionObject(request.cookies["sessiontoken"]);
 		if(request.postContentLength!=0)
 		{
 			request.postContent=socket->BufferedRead(request.postContentLength);
