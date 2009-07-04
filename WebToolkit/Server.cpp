@@ -273,5 +273,8 @@ HttpSessionObject* Server::GetSessionObject(const string& token)
 	MutexLock lock(sessionsMutex);
 	if(sessions.find(token)==sessions.end())
 		return NULL;
+	time_t t;
+	time(&t);
+	sessions[token].whenToDelete=t+gcMaxLifeTime;
 	return sessions[token].object;
 }
