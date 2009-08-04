@@ -49,6 +49,7 @@ private:
 	ostringstream body;
 	time_t expireTime;
 	vector<Cookie> cookies;
+	vector<pair<string,string> > customHeaders;
 public:
 	HttpResponse();
 	void SetResultNotFound();
@@ -65,6 +66,7 @@ public:
 	void SetContentRange(i64 from,i64 to,i64 total);
 	void SetExpires(time_t t);
 	void SetCookie(const string& name,const string& value,int expireTime);
+	void AddCustomHeader(const string& name,const string& value);
 };
 
 class IHttpRequestHandler

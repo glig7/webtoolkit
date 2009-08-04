@@ -226,6 +226,8 @@ string HttpResponse::BuildHeader()
 			r<<"; path=/"<<endl;
 		}
 	}
+	for(size_t i=0;i<customHeaders.size();i++)
+		r<<customHeaders[i].first<<": "<<customHeaders[i].second<<endl;
 	r<<"Connection: close"<<endl;
 	r<<endl;
 	return r.str();
@@ -290,6 +292,11 @@ void HttpResponse::SetCookie(const string& name,const string& value,int expireTi
 	cookie.value=value;
 	cookie.expireTime=expireTime;
 	cookies.push_back(cookie);
+}
+
+void HttpResponse::AddCustomHeader(const string& name,const string& value)
+{
+	customHeaders.push_back(make_pair(name,value));
 }
 
 HostDispatcher::HostDispatcher():defaultHandler(NULL),autoParse(false)
