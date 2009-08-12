@@ -21,6 +21,7 @@ using namespace std;
 
 #include <time.h>
 #include <stdlib.h>
+#include <string.h>
 
 #ifdef __UCLIBC__
 typedef basic_string<wchar_t> wstring;

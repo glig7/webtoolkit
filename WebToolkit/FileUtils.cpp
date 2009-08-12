@@ -212,3 +212,4 @@ string FileUtils::ReadFile(const string& st)
 	string r(buf.buf,size);
 	return r;
 }
+

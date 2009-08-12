@@ -60,7 +60,7 @@ unsigned int Thread::GetCurrentThreadId()
 #ifdef WIN32
 	return static_cast<unsigned int>(::GetCurrentThreadId());
 #else
-    return static_cast<unsigned int>(pthread_self());
+	return static_cast<unsigned int>(pthread_self());
 #endif
 }
 
@@ -69,7 +69,7 @@ void Thread::Sleep(int ms)
 #ifdef WIN32
 	::Sleep(ms);
 #else
-    usleep(1000*ms);
+	usleep(1000*ms);
 #endif
 }
 
@@ -146,3 +146,4 @@ void CondVar::Signal()
 	pthread_cond_signal(&condVar);
 #endif
 }
+

@@ -47,3 +47,4 @@ struct EnvironmentInit
 		Environment::Init();
 	}
 } environmentInit;
+

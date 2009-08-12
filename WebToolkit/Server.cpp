@@ -222,3 +222,4 @@ HttpSessionObject* Server::GetSessionObject(const string& token)
 	sessions[token].whenToDelete=t+gcMaxLifeTime;
 	return sessions[token].object;
 }
+

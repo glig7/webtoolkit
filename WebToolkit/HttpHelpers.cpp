@@ -96,3 +96,4 @@ void Redirector::Handle(HttpServerContext* context)
 	else
 		throw HttpException(HttpNotFound,"Not found.");
 }
+

@@ -14,7 +14,7 @@ File::File(const string& fileName,bool write):f(NULL)
 #else
 	string t=write?"w":"r";
 	t+="b";
-	f=fopen(Util::AdjustPath(fileName).c_str(),t.c_str());
+	f=fopen(FileUtils::AdjustPath(fileName).c_str(),t.c_str());
 	if(f==NULL)
 #endif
 		throw IOException("Failed to open file "+fileName);
