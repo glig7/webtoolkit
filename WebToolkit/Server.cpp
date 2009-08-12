@@ -35,6 +35,8 @@ void Server::ListenerThread()
 	{
 		if(listener.Wait(500))
 		{
+			if(terminated)
+				break;
 			Socket* socket=listener.Accept();
 			if(workersCount!=0)
 				tasks.Push(socket);

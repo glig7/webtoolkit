@@ -27,6 +27,7 @@ public:
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <errno.h>
+#include <signal.h>
 #endif
 
 BaseSocket::BaseSocket():sock(-1)
@@ -56,7 +57,17 @@ bool BaseSocket::Wait(int timeout)
 	timeval tv;
 	tv.tv_sec=0;
 	tv.tv_usec=timeout*1000;
+#ifndef WIN32
+	sigset_t new_set,old_set;
+	sigemptyset(&new_set);
+	sigaddset(&new_set,SIGINT);
+	sigaddset(&new_set,SIGTERM);
+	sigprocmask(SIG_BLOCK,&new_set,&old_set);
+#endif
 	select(sock+1,&readfds,NULL,NULL,&tv);
+#ifndef WIN32
+	sigprocmask(SIG_SETMASK,&old_set,NULL);
+#endif
 	return FD_ISSET(sock,&readfds)!=0;
 }
 
