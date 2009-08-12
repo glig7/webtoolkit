@@ -5,6 +5,15 @@
 #include <signal.h>
 #endif
 
+struct Randomize
+{
+public:
+	Randomize()
+	{
+		srand(static_cast<unsigned int>(time(NULL)));
+	}
+} randomize;
+
 struct ThreadArgs
 {
 	ThreadProc threadProc;
@@ -46,13 +55,24 @@ void Thread::StartThread(ThreadProc threadProc,void* arg)
 #endif
 }
 
-unsigned long Thread::GetCurrentThreadId() {
+unsigned int Thread::GetCurrentThreadId()
+{
 #ifdef WIN32
-	return (unsigned long) ::GetCurrentThreadId();
+	return static_cast<unsigned int>(::GetCurrentThreadId());
 #else
-    return (unsigned long) pthread_self();
+    return static_cast<unsigned int>(pthread_self());
 #endif
 }
+
+void Thread::Sleep(int ms)
+{
+#ifdef WIN32
+	::Sleep(ms);
+#else
+    usleep(1000*ms);
+#endif
+}
+
 
 Mutex::Mutex()
 {

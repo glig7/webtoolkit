@@ -2,7 +2,6 @@
 #define	_SERVER_H
 
 #include "Socket.h"
-#include "Client.h"
 #include "Http.h"
 #include "Thread.h"
 
@@ -12,37 +11,39 @@ struct Session
 	HttpSessionObject* object;
 };
 
-class Server:public Singleton<Server>
+class Server
 {
 private:
 	Listener listener;
-	IHttpRequestHandler* handler;
-	INotFoundHandler* handlerNotFound;
-	IErrorHandler* handlerError;
 	Mutex workersMutex;
 	volatile int workersCount;
+	volatile bool listenerThreadRunning;
 	int listenerPort;
 	string listenerIP;
 	Mutex sessionsMutex;
 	map<string,Session> sessions;
 	int gcCounter;
+	void OnWorkerAttach();
+	void OnWorkerDetach();
+	static void _ListenerThread(void* server);
+	static void _WorkerThread(void* server);
+	void ListenerThread();
+	void WorkerThread();
 public:
+	IHttpHandler* handler;
+	IHttpHandler* defaultErrorHandler;
 	int gcPeriod,gcMaxLifeTime;
 	volatile bool terminated;
 	ThreadTasks<Socket*> tasks;
-	Server(int port,const string& ip,int numWorkers=4);
+	Server(int port=8080,const string& ip="0.0.0.0",int numWorkers=16);
 	~Server();
 	void Run();
-	void Handle(HttpRequest* request,HttpResponse* response);
-	void HandleNotFound(HttpResponse* response);
-	void RegisterHandler(IHttpRequestHandler* handler);
-	void RegisterNotFoundHandler(INotFoundHandler* handlerNotFound);
-	void RegisterErrorHandler(IErrorHandler* handlerError);
-	void OnWorkerAttach();
-	void OnWorkerDetach();
-	void ServeFile(const string& fileName,HttpRequest* request,HttpResponse* response,bool download=false);
+	void Terminate();
+	void RegisterHandler(IHttpHandler* handler);
+	void RegisterDefaultErrorHandler(IHttpHandler* handler);
+	void ServeFile(const string& fileName,HttpServerContext* context,bool download=false);
 	void StartWorkers(int numWorkers);
-	void StartSession(HttpSessionObject* sessionObject,HttpRequest* request,HttpResponse* response);
+	void StartSession(HttpSessionObject* sessionObject,HttpServerContext* context);
 	HttpSessionObject* GetSessionObject(const string& token);
 };
 

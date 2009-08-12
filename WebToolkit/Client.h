@@ -1,19 +1,18 @@
 #ifndef _CLIENT_H
 #define	_CLIENT_H
 
-#include "Socket.h"
-#include "Thread.h"
-#include "Http.h"
+class Server;
+class Socket;
 
-class Client:public HttpResponse
+class Client
 {
 private:
+	Server* server;
 	Socket* socket;
 public:
-	Client(Socket* socket);
+	Client(Server* serv,Socket* sock);
 	~Client();
 	void Run();
-	void DirectSend(const char* buf,int len);
 };
 
 #endif

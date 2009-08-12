@@ -1,13 +1,15 @@
 #ifndef _FILE_H
 #define	_FILE_H
 
+#include "Stream.h"
+
 #ifdef WIN32
 #include <windows.h>
 #else
 #include <stdio.h>
 #endif
 
-class File
+class File: public InputStream,public OutputStream,public SeekableStream
 {
 private:
 #ifdef WIN32
@@ -15,18 +17,11 @@ private:
 #else
 	FILE* f;
 #endif
-	bool eof;
-	string linebuf;
 public:
 	File(const string& fileName,bool write);
 	~File();
-	size_t Read(char* buf,size_t len);
-	string ReadSome();
-	string ReadLine();
-	bool Eof();
-	void Write(const char* buf,size_t len);
-	void Write(const string& st);
-	void WriteLine(const string& st);
+	int ReadSomeUnbuffered(void* buf,int len);
+	int WriteSome(const void* buf,int len);
 	void Seek(i64 offset);
 };
 

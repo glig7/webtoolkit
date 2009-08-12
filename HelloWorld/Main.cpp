@@ -1,6 +1,6 @@
 #include "Main.h"
 
-HelloWorld::HelloWorld():server(8080,"0.0.0.0")
+HelloWorld::HelloWorld():server()
 {
 	server.RegisterHandler(this);
 }
@@ -10,9 +10,9 @@ void HelloWorld::Run()
 	server.Run();
 }
 
-void HelloWorld::Handle(HttpRequest* request,HttpResponse* response)
+void HelloWorld::Handle(HttpServerContext* context)
 {
-	response->Write("<html><body><h1>Hello, world!</h1></body></html>");
+	context->responseBody<<"<html><body><h1>Hello, world!</h1></body></html>";
 }
 
 int main()
@@ -21,9 +21,10 @@ int main()
 	{
 		HelloWorld app;
 		app.Run();
+		Environment::WaitForTermination();
 	}
 	catch(exception& e)
 	{
-		cout<<e.what()<<endl;
+		LOG(LogError)<<e.what();
 	}
 }

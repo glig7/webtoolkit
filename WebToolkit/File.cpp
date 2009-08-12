@@ -1,23 +1,23 @@
 #include "Common.h"
 #include "File.h"
 #include "Util.h"
+#include "FileUtils.h"
 
-File::File(const string& fileName,bool write):f(NULL),eof(false)
+File::File(const string& fileName,bool write):f(NULL)
 {
 #ifdef WIN32
 	DWORD dwDesiredAccess=write?GENERIC_WRITE:GENERIC_READ;
 	DWORD dwShareMode=write?0:FILE_SHARE_READ;
 	DWORD dwCreationDisposition=write?CREATE_ALWAYS:OPEN_EXISTING;
-	f=CreateFileW(Util::UTF8Decode(Util::AdjustPath(fileName)).c_str(),dwDesiredAccess,dwShareMode,NULL,dwCreationDisposition,FILE_FLAG_SEQUENTIAL_SCAN,NULL);
+	f=CreateFileW(Util::UTF8Decode(FileUtils::AdjustPath(fileName)).c_str(),dwDesiredAccess,dwShareMode,NULL,dwCreationDisposition,FILE_FLAG_SEQUENTIAL_SCAN,NULL);
 	if(f==INVALID_HANDLE_VALUE)
-		throw runtime_error("Failed to open file "+fileName);
 #else
 	string t=write?"w":"r";
 	t+="b";
 	f=fopen(Util::AdjustPath(fileName).c_str(),t.c_str());
 	if(f==NULL)
-		throw runtime_error("Failed to open file "+fileName);
 #endif
+		throw IOException("Failed to open file "+fileName);
 }
 
 File::~File()
@@ -29,82 +29,30 @@ File::~File()
 #endif
 }
 
-size_t File::Read(char* buf,size_t len)
+int File::ReadSomeUnbuffered(void* buf,int len)
 {
 #ifdef WIN32
-	size_t br;
+	int br;
 	if(ReadFile(f,buf,len,reinterpret_cast<LPDWORD>(&br),NULL)==0)
-		throw runtime_error("File read failed");
 #else
-	size_t br=fread(buf,1,len,f);
+	int br=fread(buf,1,len,f);
 	if(ferror(f)!=0)
-		throw runtime_error("File read failed");
 #endif
+		throw IOException("File read failed");
 	if(br<len)
 		eof=true;
 	return br;
 }
 
-string File::ReadSome()
-{
-	char buf[256];
-	size_t br=Read(buf,sizeof(buf));
-	return string(buf,br);
-}
-
-string File::ReadLine()
-{
-	int newline=linebuf.find('\n');
-	int pos=linebuf.length();
-	while(newline==string::npos)
-	{
-		string t=ReadSome();
-		if(t.empty())
-			break;
-		linebuf+=t;
-		newline=linebuf.find('\n',pos);
-		pos=linebuf.length();
-	}
-	string r;
-	if(newline==string::npos)
-	{
-		r=linebuf;
-		linebuf.clear();
-	}
-	else
-	{
-		r=linebuf.substr(0,newline);
-		linebuf.erase(0,newline+1);
-	}
-	if((!r.empty())&&(r[r.length()-1]=='\r'))
-		r.resize(r.length()-1);
-	return r;
-}
-
-bool File::Eof()
-{
-	return (linebuf.empty())&&(eof);
-}
-
-void File::Write(const char* buf,size_t len)
+int File::WriteSome(const void* buf,int len)
 {
 #ifdef WIN32
 	if(WriteFile(f,buf,len,NULL,NULL)==0)
 #else
 	if(fwrite(buf,len,1,f)==0)
 #endif
-		throw runtime_error("File write failed");
-}
-
-void File::Write(const string& st)
-{
-	Write(st.c_str(),st.length());
-}
-
-void File::WriteLine(const string& st)
-{
-	Write(st);
-	Write("\n");
+		throw IOException("File write failed");
+	return len;
 }
 
 void File::Seek(i64 offset)
@@ -116,6 +64,7 @@ void File::Seek(i64 offset)
 #else
 	if(fseeko(f,offset,SEEK_SET)!=0)
 #endif
-		throw runtime_error("File seek failed");
+		throw IOException("File seek failed");
+	buffer.clear();
 }
 

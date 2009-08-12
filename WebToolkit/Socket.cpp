@@ -4,7 +4,6 @@
 #include <memory.h>
 
 #ifdef WIN32
-#pragma comment(lib,"ws2_32")
 #include <Ws2tcpip.h>
 
 struct WSInit
@@ -70,99 +69,32 @@ Socket::~Socket()
 {
 }
 
-string Socket::Read()
+int Socket::ReadSomeUnbuffered(void* buf,int len)
 {
-	char buf[1024];
-	int bytesRead=recv(sock,buf,sizeof(buf),0);
-	if(bytesRead<0)
-		throw runtime_error("Socket read error");
-	return string(buf,bytesRead);
+	int br=recv(sock,reinterpret_cast<char*>(buf),len,0);
+	if(br<0)
+		throw IOException("Socket read error");
+	return br;
 }
 
-string Socket::BufferedRead(int len)
+bool Socket::WaitUnbuffered(int timeout)
 {
-	while(linebuf.length()<static_cast<size_t>(len))
-	{
-		string t=Read();
-		if(t.empty())
-			throw runtime_error("Failed to read specified number of bytes");
-		linebuf+=t;
-	}
-	string st=linebuf.substr(0,len);
-	linebuf.erase(0,len);
-	return st;
+	return BaseSocket::Wait(timeout);
 }
 
-bool Socket::WaitForLine(int timeout)
+int Socket::WriteSome(const void* buf,int len)
 {
-	int newline=linebuf.find('\n');
-	int pos=linebuf.length();
-	while(newline==string::npos)
-	{
-		if(!Wait(timeout))
-			return false;
-		string t=Read();
-		if(t.empty())
-			break;
-		linebuf+=t;
-		newline=linebuf.find('\n',pos);
-		pos=linebuf.length();
-	}
-	return true;
-}
-
-string Socket::ReadLine()
-{
-	int newline=linebuf.find('\n');
-	int pos=linebuf.length();
-	while(newline==string::npos)
-	{
-		string t=Read();
-		if(t.empty())
-			break;
-		linebuf+=t;
-		newline=linebuf.find('\n',pos);
-		pos=linebuf.length();
-	}
-	string r;
-	if(newline==string::npos)
-	{
-		r=linebuf;
-		linebuf.clear();
-	}
-	else
-	{
-		r=linebuf.substr(0,newline);
-		linebuf.erase(0,newline+1);
-	}
-	if((!r.empty())&&(r[r.length()-1]=='\r'))
-		r.resize(r.length()-1);
-	return r;
-}
-
-void Socket::Write(const char* buf,int len)
-{
-	int bytesWritten;
-	while(len>0)
-	{
-		bytesWritten=send(sock,buf,len,0);
-		if(bytesWritten<0)
-			throw runtime_error("Socket write error");
-		buf+=bytesWritten;
-		len-=bytesWritten;
-	}
-}
-
-void Socket::Write(const string& buf)
-{
-	Write(buf.c_str(),buf.length());
+	int bw=send(sock,reinterpret_cast<const char*>(buf),len,0);
+	if(bw<0)
+		throw IOException("Socket write error");
+	return bw;
 }
 
 Listener::Listener(int portNumber,const string& ip)
 {
 	sock=socket(PF_INET,SOCK_STREAM,IPPROTO_TCP);
 	if(sock<0)
-		throw runtime_error("Failed to create socket");
+		throw IOException("Failed to create socket");
 	int val=1;
 	setsockopt(sock,SOL_SOCKET,SO_REUSEADDR,reinterpret_cast<const char*>(&val),sizeof(val));
 	sockaddr_in stSockAddr;
@@ -171,9 +103,9 @@ Listener::Listener(int portNumber,const string& ip)
 	stSockAddr.sin_port=htons(portNumber);
 	stSockAddr.sin_addr.s_addr=inet_addr(ip.c_str());
 	if(bind(sock,(const sockaddr*)&stSockAddr,sizeof (stSockAddr))<0)
-		throw runtime_error("Failed to bind socket");
+		throw IOException("Failed to bind socket");
 	if(listen(sock,10)<0)
-		throw runtime_error("Failed to start listening");
+		throw IOException("Failed to start listening");
 }
 
 Listener::~Listener()
@@ -186,7 +118,7 @@ Socket* Listener::Accept()
 	socklen_t addrlen=sizeof (remoteaddr);
 	int clientSock=accept(sock,(sockaddr*)&remoteaddr,&addrlen);
 	if(clientSock<0)
-		throw runtime_error("accept() failed");
+		throw IOException("accept() failed");
 	Socket* s=new Socket(clientSock);
 	s->remoteIP=inet_ntoa(((sockaddr_in*)&remoteaddr)->sin_addr);
 	s->remotePort=((sockaddr_in*)&remoteaddr)->sin_port;

@@ -3,7 +3,7 @@
 #include "Logger.h"
 
 
-FileServerConfig::FileServerConfig():ip("0.0.0.0"),port(8080),rootDir("."),htmlTemplate("list.html")
+FileServerConfig::FileServerConfig():ip("0.0.0.0"),port(8080),numWorkers(16),rootDir("."),htmlTemplate("list.html")
 {
 	File in("FileServer.conf",false);
 	while(!in.Eof())
@@ -73,8 +73,7 @@ FileServerConfig::FileServerConfig():ip("0.0.0.0"),port(8080),rootDir("."),htmlT
 FileServer::FileServer():server(config.port,config.ip,config.numWorkers)
 {
 	server.RegisterHandler(this);
-	server.RegisterNotFoundHandler(this);
-	htmlTemplate=Util::ReadFile(config.htmlTemplate);
+	htmlTemplate=FileUtils::ReadFile(config.htmlTemplate);
 	size_t folderStart=htmlTemplate.find("<%folder%>");
 	size_t folderEnd=htmlTemplate.find("<%/folder%>");
 	folderTemplate=htmlTemplate.substr(folderStart+10,folderEnd-folderStart-10);
@@ -90,11 +89,6 @@ void FileServer::Run()
 	server.Run();
 }
 
-void FileServer::HandleNotFound(HttpResponse* response)
-{
-	response->Write("<html><body><h1>404 Not Found</h1><p>Sorry!</p></body></html>");
-}
-
 bool compare(const DirectoryEntry& e1,const DirectoryEntry& e2)
 {
 	if(e1.isDirectory&&!e2.isDirectory)
@@ -104,20 +98,17 @@ bool compare(const DirectoryEntry& e1,const DirectoryEntry& e2)
 	return Util::StringToLower(e1.name)<Util::StringToLower(e2.name);
 }
 
-void FileServer::Handle(HttpRequest* request,HttpResponse* response)
+void FileServer::Handle(HttpServerContext* context)
 {
-	if(request->resource=="/favicon.ico")
+	if(context->requestHeader.resource=="/favicon.ico")
 	{
-		Server::Instance().ServeFile(config.favIcon,request,response);
+		context->ServeFile(config.favIcon);
 		return;
 	}
-	string urlPath=Util::URLDecode(request->resource);
+	string urlPath=Util::URLDecode(context->requestHeader.resource);
 	string path=urlPath;
-	if(!Util::PathValid(path))
-	{
-		Server::Instance().HandleNotFound(response);
-		return;
-	}
+	if(!FileUtils::PathValid(path))
+		throw HttpException(HttpNotFound,"Not found.");
 	if((!config.bindAs.empty())&&(path.length()>2))
 	{
 		int slashPos=path.find('/',1);
@@ -130,37 +121,36 @@ void FileServer::Handle(HttpRequest* request,HttpResponse* response)
 				time_t t;
 				time(&t);
 				t+=86400;
-				response->SetExpires(t);
-				Server::Instance().ServeFile(path,request,response);
+				context->responseHeader.expireTime=t;
+				context->ServeFile(path);
 				return;
 			}
 		}
 	}
 	path=config.rootDir+path;
-	bool trailingSlash=(request->resource[request->resource.length()-1]=='/');
+	bool trailingSlash=(context->requestHeader.resource[context->requestHeader.resource.length()-1]=='/');
 	if((!path.empty())&&(urlPath!="/"))
 	{
 		string path2=path;
 		if(trailingSlash)
 			path2.resize(path2.size()-1);
-		CheckPathResult r=Util::CheckPath(path2);
+		CheckPathResult r=FileUtils::CheckPath(path2);
 		switch(r)
 		{
 		case PathNotExist:
-			Server::Instance().HandleNotFound(response);
-			return;
+			throw HttpException(HttpNotFound,"Not found.");
 		case PathIsFile:
 			if(trailingSlash)
 			{
-				response->Redirect(request->resource.substr(0,request->resource.length()-1));
+				context->Redirect(context->requestHeader.resource.substr(0,context->requestHeader.resource.length()-1));
 				return;
 			}
-			Server::Instance().ServeFile(path,request,response);
+			context->ServeFile(path);
 			return;
 		default:
 			if(!trailingSlash)
 			{
-				response->Redirect(request->resource+'/');
+				context->Redirect(context->requestHeader.resource+'/');
 				return;
 			}
 		}
@@ -168,7 +158,7 @@ void FileServer::Handle(HttpRequest* request,HttpResponse* response)
 	string responseBody=htmlTemplate;
 	Util::Substitute(responseBody,"<%pwd%>",urlPath);
 	ostringstream list;
-	vector<DirectoryEntry> dl=Util::DirectoryList(path);
+	vector<DirectoryEntry> dl=FileUtils::DirectoryList(path);
 	sort(dl.begin(),dl.end(),compare);
 	for(vector<DirectoryEntry>::iterator i=dl.begin();i!=dl.end();i++)
 	{
@@ -187,13 +177,32 @@ void FileServer::Handle(HttpRequest* request,HttpResponse* response)
 			Util::Substitute(t,"<%link%>",link);
 			Util::Substitute(t,"<%name%>",visibleName);
 			ostringstream s;
-			s<<i->size;
+			if(i->size<1024)
+				s<<i->size<<" B";
+			else
+			{
+				s<<fixed<<setprecision(1);
+				float t=i->size/1024.0f;
+				if(t<1024)
+					s<<t<<" KiB";
+				else
+				{
+					t/=1024;
+					if(t<1024)
+						s<<t<<" MiB";
+					else
+					{
+						t/=1024;
+						s<<t<<" GiB";
+					}
+				}
+			}
 			Util::Substitute(t,"<%size%>",s.str());
 			list<<t;
 		}
 	}
 	Util::Substitute(responseBody,"<%list%>",list.str());
-	response->Write(responseBody);
+	context->responseBody<<responseBody;
 }
 
 int main()
@@ -202,9 +211,10 @@ int main()
 	{
 		FileServer app;
 		app.Run();
+		Environment::WaitForTermination();
 	}
 	catch(exception& e)
 	{
-		cout<<e.what()<<endl;
+		LOG(LogError)<<e.what();
 	}
 }

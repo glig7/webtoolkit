@@ -15,7 +15,8 @@ class Thread
 {
 public:
 	static void StartThread(ThreadProc threadProc,void* arg);
-    static unsigned long GetCurrentThreadId();
+    static unsigned int GetCurrentThreadId();
+	static void Sleep(int ms);
 };
 
 class Mutex

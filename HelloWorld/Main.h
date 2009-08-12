@@ -3,14 +3,14 @@
 
 #include <WebToolkit.h>
 
-class HelloWorld:public IHttpRequestHandler
+class HelloWorld:public IHttpHandler
 {
 private:
 	Server server;
 public:
 	HelloWorld();
 	void Run();
-	void Handle(HttpRequest* request,HttpResponse* response);
+	void Handle(HttpServerContext* context);
 };
 
 #endif

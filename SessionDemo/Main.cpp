@@ -8,7 +8,7 @@ SessionObject::~SessionObject()
 {
 }
 
-SessionDemo::SessionDemo():server(8080,"0.0.0.0")
+SessionDemo::SessionDemo():server()
 {
 	server.RegisterHandler(this);
 }
@@ -18,22 +18,17 @@ void SessionDemo::Run()
 	server.Run();
 }
 
-void SessionDemo::Handle(HttpRequest* request,HttpResponse* response)
+void SessionDemo::Handle(HttpServerContext* context)
 {
-	if(request->resource!="/")
-	{
-		Server::Instance().HandleNotFound(response);
-		return;
-	}
-	if(request->sessionObject==NULL)
-		Server::Instance().StartSession(new SessionObject(),request,response);
-	SessionObject* sessionObject=static_cast<SessionObject*>(request->sessionObject);
+	if(context->requestHeader.resource!="/")
+		throw HttpException(HttpNotFound,"Not Found!");
+	if(context->sessionObject==NULL)
+		context->StartSession(new SessionObject());
+	SessionObject* sessionObject=static_cast<SessionObject*>(context->sessionObject);
 	sessionObject->counter++;
-	ostringstream r;
-	r<<"<html><body><p>This page has been accessed ";
-	r<<sessionObject->counter;
-	r<<" times during this session.</p></body></html>";
-	response->Write(r.str());
+	context->responseBody<<"<html><body><p>This page has been accessed ";
+	context->responseBody<<sessionObject->counter;
+	context->responseBody<<" times during this session.</p></body></html>";
 }
 
 int main()
@@ -42,9 +37,10 @@ int main()
 	{
 		SessionDemo app;
 		app.Run();
+		Environment::WaitForTermination();
 	}
 	catch(exception& e)
 	{
-		cout<<e.what()<<endl;
+		LOG(LogError)<<e.what();
 	}
 }

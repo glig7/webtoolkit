@@ -17,7 +17,7 @@ public:
 	FileServerConfig();
 };
 
-class FileServer:public IHttpRequestHandler,public INotFoundHandler
+class FileServer:public IHttpHandler
 {
 private:
 	FileServerConfig config;
@@ -28,8 +28,7 @@ private:
 public:
 	FileServer();
 	void Run();
-	void HandleNotFound(HttpResponse* response);
-	void Handle(HttpRequest* request,HttpResponse* response);
+	void Handle(HttpServerContext* context);
 };
 
 #endif

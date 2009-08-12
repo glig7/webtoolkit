@@ -1,6 +1,8 @@
 #ifndef _SOCKET_H
 #define	_SOCKET_H
 
+#include "Stream.h"
+
 class BaseSocket
 {
 protected:
@@ -14,19 +16,15 @@ public:
 	bool Wait(int timeout);
 };
 
-class Socket:public BaseSocket
+class Socket:public BaseSocket,public InputStream,public OutputStream
 {
-private:
-	string linebuf;
 public:
 	Socket(int sock);
 	~Socket();
-	string Read();
-	string BufferedRead(int len);
-	bool WaitForLine(int timeout);
-	string ReadLine();
-	void Write(const char* buf,int len);
-	void Write(const string& buf);
+	int ReadSomeUnbuffered(void* buf,int len);
+	bool WaitUnbuffered(int timeout);
+	int WriteSome(const void* buf,int len);
+	using InputStream::Wait;
 };
 
 class Listener:public BaseSocket

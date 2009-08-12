@@ -3,37 +3,24 @@
 
 #include <WebToolkit.h>
 
-class Index:public IHttpRequestHandler
-{
-public:
-	void Handle(HttpRequest* request,HttpResponse* response);
-};
-
-class Post:public IHttpRequestHandler
-{
-public:
-	void Handle(HttpRequest* request,HttpResponse* response);
-};
-
 struct BlogEntry
 {
 	string author;
 	string text;
 };
 
-class SimpleBlog:public Singleton<SimpleBlog>
+class SimpleBlog
 {
 private:
 	Server server;
 	URIDispatcher dispatcher;
-	RootIndexRedirector indexRedirector;
-	Index index;
-	Post post;
-public:
 	Mutex entriesMutex;
 	vector<BlogEntry> entries;
+public:
 	SimpleBlog();
 	void Run();
+	void Index(HttpServerContext* context);
+	void Post(HttpServerContext* context);
 };
 
 #endif

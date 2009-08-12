@@ -1,11 +1,97 @@
 #include "Common.h"
 #include "Client.h"
-#include "Server.h"
 #include "Logger.h"
+#include "Http.h"
+#include "Server.h"
+#include "Socket.h"
 
-Client::Client(Socket* socket)
+class ClientRequest:public HttpServerContext
 {
-	this->socket=socket;
+private:
+	Socket* socket;
+	int dataLeft;
+protected:
+	int ReadSomeUnbuffered(void* buf,int len);
+public:
+	ClientRequest(Server* server,Socket* s):HttpServerContext(server),socket(s)
+	{
+		clientIP=socket->remoteIP;
+		errorHandler=server->defaultErrorHandler;
+	}
+	int WriteSome(const void* buf,int len)
+	{
+		return socket->WriteSome(buf,len);
+	}
+	bool Work();
+};
+
+int ClientRequest::ReadSomeUnbuffered(void* buf,int len)
+{
+	int t=min(len,dataLeft);
+	socket->Read(buf,t);
+	dataLeft-=t;
+	if(dataLeft==0)
+		eof=true;
+	return t;
+}
+
+bool ClientRequest::Work()
+{
+	string st;
+	for(;;)
+	{
+		if(!socket->Wait(5000))
+			return false;
+		st=socket->ReadLine();
+		if(st.empty())
+			break;
+		requestHeader.ParseLine(st);
+	}
+	if(requestHeader.resource.empty())
+		return true;
+	LOG(LogInfo)<<clientIP<<" "<<Http::methodStrings[requestHeader.method]<<" "<<requestHeader.resource;
+	if(requestHeader.cookies.find("sessiontoken")!=requestHeader.cookies.end())
+		sessionObject=server->GetSessionObject(requestHeader.cookies["sessiontoken"]);
+	size_t qpos=requestHeader.resource.find('?');
+	if(qpos!=string::npos)
+	{
+		string parameters=requestHeader.resource.substr(qpos+1);
+		requestHeader.resource.erase(qpos);
+		ParseParameters(parameters);
+	}
+	if(requestHeader.contentLength!=0)
+	{
+		dataLeft=requestHeader.contentLength;
+		ProcessPostData();
+	}
+	try
+	{
+		server->handler->Handle(this);
+	}
+	catch(HttpException& e)
+	{
+		responseHeader.result=e.result;
+		responseBody.clear();
+		responseBody<<e.what();
+		LOG(LogError)<<e.what();
+		if(errorHandler!=NULL)
+			errorHandler->Handle(this);
+	}
+	catch(exception& e)
+	{
+		responseBody.clear();
+		responseBody<<e.what();
+		LOG(LogError)<<e.what();
+		if(errorHandler!=NULL)
+			errorHandler->Handle(this);
+	}
+	SendResponse();
+	LOG(LogVerbose)<<"Finished.";
+	return true;
+}
+
+Client::Client(Server* serv,Socket* sock):server(serv),socket(sock)
+{
 }
 
 Client::~Client()
@@ -15,37 +101,20 @@ Client::~Client()
 
 void Client::Run()
 {
+	LOG(LogDebug)<<socket->remoteIP<<" Connection opened.";
 	try
 	{
-		HttpRequest request;
-		request.clientIP=socket->remoteIP;
-		request.clientPort=socket->remotePort;
-		string st;
-		for(;;)
+		while(!socket->Eof())
 		{
-			st=socket->ReadLine();
-			if(st.empty())
+			ClientRequest clientRequest(server,socket);
+			if(!clientRequest.Work())
 				break;
-			request.ParseLine(st);
 		}
-		if(request.cookies.find("sessiontoken")!=request.cookies.end())
-			request.sessionObject=Server::Instance().GetSessionObject(request.cookies["sessiontoken"]);
-		if(request.postContentLength!=0)
-		{
-			request.postContent=socket->BufferedRead(request.postContentLength);
-			request.ParseParameters(request.postContent);
-		}
-		LOG(LogInfo)<<socket->remoteIP<<(request.isPost?" POST ":" GET ")<<request.resource;
-		Server::Instance().Handle(&request,this);
-		Send();
 	}
 	catch(exception& e)
 	{
 		LOG(LogError)<<e.what();
 	}
+	LOG(LogDebug)<<socket->remoteIP<<" Connection closed.";
 }
 
-void Client::DirectSend(const char* buf,int len)
-{
-	socket->Write(buf,len);
-}

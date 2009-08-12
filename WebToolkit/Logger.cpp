@@ -3,7 +3,7 @@
 #include "Util.h"
 
 Mutex Log::mutex;
-LogLevel Log::reportingLevel=LogInfo;
+LogLevel Log::reportingLevel=LogDebug;
 ILogHandler* Log::logHandler=NULL;
 
 const char* const Log::names[]={
@@ -39,9 +39,8 @@ std::ostringstream& Log::Get(LogLevel level)
 	time_t t;
 	time(&t);
 	os<<Util::Timestamp(t)<<" ";
+	os<<"("<<hex<<Thread::GetCurrentThreadId()<<dec<<") ";
     os<<names[level]<<" ";
-	if(level==LogDebug)
-		os<<"(thread:"<<hex<<Thread::GetCurrentThreadId()<<dec<<") ";
     return os;
 }
 

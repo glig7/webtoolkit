@@ -1,68 +1,36 @@
 #include "Common.h"
 #include "Server.h"
 #include "Util.h"
+#include "FileUtils.h"
 #include "File.h"
 #include "Logger.h"
+#include "Client.h"
 
-template<> Server* Singleton<Server>::instance=NULL;
-
-#ifdef WIN32
-#include <windows.h>
-
-BOOL WINAPI HandlerRoutine(DWORD dwCtrlType)
+Server::Server(int port,const string& ip,int numWorkers):listenerPort(port),listenerIP(ip),listener(port,ip),handler(NULL),defaultErrorHandler(NULL),terminated(false),workersCount(0),gcPeriod(100),gcMaxLifeTime(1800),gcCounter(0),listenerThreadRunning(false)
 {
-	Server::Instance().terminated=true;
-	return TRUE;
-}
-#else
-#include <signal.h>
-#endif
-
-Server::Server(int port,const string& ip,int numWorkers):listenerPort(port),listenerIP(ip),listener(port,ip),handler(NULL),handlerNotFound(NULL),handlerError(NULL),terminated(false),workersCount(0),gcPeriod(100),gcMaxLifeTime(1800),gcCounter(0)
-{
-	srand(static_cast<unsigned int>(time(NULL)));
-	instance=this;
-#ifdef WIN32
-	SetConsoleCtrlHandler(HandlerRoutine,TRUE);
-#else
-	sigset_t sigset;
-	sigemptyset(&sigset);
-	sigaddset(&sigset,SIGINT);
-	sigaddset(&sigset,SIGHUP);
-	sigaddset(&sigset,SIGTERM);
-	sigprocmask(SIG_BLOCK,&sigset,NULL);
-	signal(SIGPIPE,SIG_IGN);
-#endif
 	StartWorkers(numWorkers);
 }
 
 Server::~Server()
 {
+	Terminate();
 	for(map<string,Session>::iterator iter=sessions.begin();iter!=sessions.end();iter++)
 		delete iter->second.object;
-	LOG(LogInfo)<<"Server stopped";
 }
 
-void worker_thread(void* d)
+void Server::_ListenerThread(void* server)
 {
-	Server::Instance().OnWorkerAttach();
-	for(;;)
-	{
-		Socket* socket=Server::Instance().tasks.Pop();
-		if(!socket)
-			break;
-		Client client(socket);
-		client.Run();
-	}
-	Server::Instance().OnWorkerDetach();
+	reinterpret_cast<Server*>(server)->ListenerThread();
 }
 
-void Server::Run()
+void Server::_WorkerThread(void* server)
 {
-	LOG(LogInfo)<<"Started server on "<<listenerIP<<":"<<listenerPort;
-#ifndef WIN32
-	sigset_t sigset;
-#endif
+	reinterpret_cast<Server*>(server)->WorkerThread();
+}
+
+void Server::ListenerThread()
+{
+	listenerThreadRunning=true;
 	while(!terminated)
 	{
 		if(listener.Wait(500))
@@ -72,73 +40,57 @@ void Server::Run()
 				tasks.Push(socket);
 			else
 			{
-				Client client(socket);
+				Client client(this,socket);
 				client.Run();
 			}
 		}
-#ifndef WIN32
-		sigpending(&sigset);
-		if(sigismember(&sigset,SIGINT)||sigismember(&sigset,SIGTERM))
-			terminated=true;
-#endif
 	}
+	listenerThreadRunning=false;
+}
+
+void Server::WorkerThread()
+{
+	OnWorkerAttach();
+	while(!terminated)
+	{
+		Socket* socket=tasks.Pop();
+		if(terminated)
+			break;
+		Client client(this,socket);
+		client.Run();
+	}
+	OnWorkerDetach();
+}
+
+void Server::Run()
+{
+	Thread::StartThread(_ListenerThread,this);
+	LOG(LogInfo)<<"Started server on "<<listenerIP<<":"<<listenerPort;
+}
+
+void Server::Terminate()
+{
+	if((workersCount==0)&&(!listenerThreadRunning))
+		return;
+	terminated=true;
 	LOG(LogInfo)<<"Waiting for worker threads...";
 	int t=workersCount;
 	for(int i=0;i<t;i++)
 		tasks.Push(NULL);
-	while(workersCount!=0)
-	{
-	}
+	while((workersCount!=0)||(listenerThreadRunning))
+		Thread::Sleep(200);
+	LOG(LogInfo)<<"Server stopped";
+	terminated=false;
 }
 
-void Server::Handle(HttpRequest* request,HttpResponse* response)
-{
-	if(handler!=NULL)
-	{
-		try
-		{
-			handler->Handle(request,response);
-		}
-		catch(exception& e)
-		{
-			response->SetResultError();
-			response->Clean();
-			if(handlerError!=NULL)
-				handlerError->HandleError(e,response);
-			else
-			{
-				response->Write("<html><body><h1>500 Internal Server Error</h1><p>Exception: ");
-				response->Write(e.what());
-				response->Write("</p</body></html>");
-			}
-		}
-	}
-	else
-		HandleNotFound(response);
-}
-
-void Server::HandleNotFound(HttpResponse* response)
-{
-	response->SetResultNotFound();
-	if(handlerNotFound!=NULL)
-		handlerNotFound->HandleNotFound(response);
-	else
-		response->Write("<html><body><h1>404 Not Found</h1></body></html>");
-}
-
-void Server::RegisterHandler(IHttpRequestHandler* handler)
+void Server::RegisterHandler(IHttpHandler* handler)
 {
 	this->handler=handler;
 }
 
-void Server::RegisterNotFoundHandler(INotFoundHandler* handlerNotFound)
+void Server::RegisterDefaultErrorHandler(IHttpHandler* handler)
 {
-	this->handlerNotFound=handlerNotFound;
-}
-
-void Server::RegisterErrorHandler(IErrorHandler* handlerError)
-{
-	this->handlerError=handlerError;
+	this->defaultErrorHandler=handler;
 }
 
 void Server::OnWorkerAttach()
@@ -153,31 +105,35 @@ void Server::OnWorkerDetach()
 	workersCount--;
 }
 
-void Server::ServeFile(const string& fileName,HttpRequest* request,HttpResponse* response,bool download)
+void Server::ServeFile(const string& fileName,HttpServerContext* context,bool download)
 {
-	i64 size=Util::GetFileSize(fileName);
+	i64 size=FileUtils::GetFileSize(fileName);
 	if(size==-1)
+		throw HttpException(HttpNotFound,"Requested file not found.");
+	time_t modifyTime=FileUtils::GetFileModifyTime(fileName);
+	if((context->requestHeader.modifyTime!=0)&&(modifyTime<=context->requestHeader.modifyTime))
 	{
-		HandleNotFound(response);
+		context->responseHeader.result=HttpNotModified;
 		return;
 	}
 	File in(fileName,false);
 	i64 contentLength;
-	if(request->rangeFrom==-1)
+	if(context->requestHeader.rangeFrom==-1)
 	{
 		contentLength=size;
-		response->SetContentLength(size);
+		context->responseHeader.contentLength=size;
 	}
 	else
 	{
-		if(request->rangeTo==-1)
-			request->rangeTo=size-1;
-		contentLength=request->rangeTo-request->rangeFrom+1;
-		response->SetContentLength(contentLength);
-		response->SetContentRange(request->rangeFrom,request->rangeTo,size);
-		in.Seek(request->rangeFrom);
+		if(context->requestHeader.rangeTo==-1)
+			context->requestHeader.rangeTo=size-1;
+		contentLength=context->requestHeader.rangeTo-context->requestHeader.rangeFrom+1;
+		context->responseHeader.contentLength=contentLength;
+		context->responseHeader.rangeFrom=context->requestHeader.rangeFrom;
+		context->responseHeader.rangeTo=context->requestHeader.rangeTo;
+		context->responseHeader.rangeTotal=size;
+		in.Seek(context->requestHeader.rangeFrom);
 	}
-	response->SetContentType("application/octet-stream");
 	if(!download)
 	{
 		int slashpos=fileName.find('/');
@@ -190,25 +146,12 @@ void Server::ServeFile(const string& fileName,HttpRequest* request,HttpResponse*
 		if(dotpos!=string::npos)
 		{
 			string ext=t.substr(dotpos+1);
-			if(ext=="txt"||ext=="cpp"||ext=="h")
-				response->SetContentType("text/plain");
-			if(ext=="htm"||ext=="html")
-				response->SetContentType("text/html");
-			if(ext=="xml")
-				response->SetContentType("text/xml");
-			if(ext=="css")
-				response->SetContentType("text/css");
-			if(ext=="js")
-				response->SetContentType("application/javascript");
-			if(ext=="gif")
-				response->SetContentType("image/gif");
-			if(ext=="jpg")
-				response->SetContentType("image/jpeg");
-			if(ext=="png")
-				response->SetContentType("image/png");
+			context->responseHeader.contentType=Util::MimeType(ext);
 		}
 	}
-	response->Send();
+	else
+		context->responseHeader.contentType="application/octet-stream";
+	context->SendResponseHeader();
 	char buf[1024];
 	while(contentLength>0)
 	{
@@ -218,7 +161,7 @@ void Server::ServeFile(const string& fileName,HttpRequest* request,HttpResponse*
 		else
 			br=sizeof(buf);
 		in.Read(buf,br);
-		response->DirectSend(buf,br);
+		context->Write(buf,br);
 		contentLength-=br;
 	}
 }
@@ -226,10 +169,10 @@ void Server::ServeFile(const string& fileName,HttpRequest* request,HttpResponse*
 void Server::StartWorkers(int numWorkers)
 {
 	for(int i=0;i<numWorkers;i++)
-		Thread::StartThread(worker_thread,NULL);
+		Thread::StartThread(_WorkerThread,this);
 }
 
-void Server::StartSession(HttpSessionObject* sessionObject,HttpRequest* request,HttpResponse* response)
+void Server::StartSession(HttpSessionObject* sessionObject,HttpServerContext* context)
 {
 	MutexLock lock(sessionsMutex);
 	time_t t;
@@ -264,8 +207,9 @@ void Server::StartSession(HttpSessionObject* sessionObject,HttpRequest* request,
 			break;
 	}
 	sessions[token]=s;
-	request->sessionObject=sessionObject;
-	response->SetCookie("sessiontoken",token,0);
+	context->sessionObject=sessionObject;
+	context->responseHeader.cookies["sessiontoken"].value=token;
+	context->responseHeader.cookies["sessiontoken"].expireTime=0;
 }
 
 HttpSessionObject* Server::GetSessionObject(const string& token)

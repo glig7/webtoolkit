@@ -3,60 +3,579 @@
 #include "Util.h"
 #include "Server.h"
 
-HttpSessionObject::~HttpSessionObject()
+const char* const Http::methodStrings[]={
+	"GET",
+	"POST"
+};
+
+const int Http::resultCodes[]={
+	200,
+	206,
+	301,
+	303,
+	304,
+	400,
+	403,
+	404,
+	405,
+	500,
+	502,
+	0
+};
+
+const char* const Http::resultStrings[]={
+	"200 OK",
+	"206 Partial Content",
+	"301 Moved Permanently",
+	"303 See Other",
+	"304 Not Modified",
+	"400 Bad Request",
+	"403 Forbidden",
+	"404 Not Found",
+	"405 Method Not Allowed",
+	"500 Internal Server Error",
+	"502 Bad Gateway"
+};
+
+const char* Http::serverString="madfish-webtoolkit/1.1";
+
+//HttpRequestHeader methods
+
+HttpRequestHeader::HttpRequestHeader():method(HttpGet),modifyTime(0),rangeFrom(-1),rangeTo(-1),contentLength(0),userAgent(Http::serverString)
 {
 }
 
-HttpRequest::HttpRequest():rangeFrom(-1),rangeTo(-1),postContentLength(0),sessionObject(NULL)
+void HttpRequestHeader::ParseHeaderItem(const string& name,const string& value)
 {
-}
-
-void HttpRequest::ParseLine(const string& line)
-{
-	if(line.compare(0,3,"GET")==0)
+	//Some additional verifications applied to ensure nothing wrong happens later.
+	if(name=="Host")
 	{
-		isPost=false;
-		size_t spacePos=line.find(' ',5);
-		if(spacePos!=string::npos)
-			resource=line.substr(4,spacePos-4);
-		else
-			resource=line.substr(4);
-		size_t qPos=resource.find('?');
-		if(qPos!=string::npos)
+		host=value;
+		return;
+	}
+	if(name=="User-Agent")
+	{
+		userAgent=value;
+		return;
+	}
+	if(name=="Range")
+	{
+		size_t eqpos=value.find('=');
+		size_t mpos=value.find('-');
+		if((eqpos==string::npos)||(mpos==string::npos))
+			throw HttpException(HttpBadRequest,"Malformed header.");
+		rangeFrom=atoll(value.substr(eqpos+1,mpos-eqpos-1).c_str());
+		string t=value.substr(mpos+1);
+		if(!t.empty())
 		{
-			ParseParameters(resource.substr(qPos+1));
-			resource.erase(qPos);
+			rangeTo=atoll(t.c_str());
+			if(rangeTo<rangeFrom)
+				throw HttpException(HttpBadRequest,"Malformed header.");
+		}
+		return;
+	}
+	if(name=="Content-Length")
+	{
+		contentLength=atoi(value.c_str());
+		if(contentLength<0)
+			throw HttpException(HttpBadRequest,"Malformed header.");
+		return;
+	}
+	if(name=="Cookie")
+	{
+		ParseCookies(value);
+		return;
+	}
+	if(name=="If-Modified-Since")
+	{
+		modifyTime=Util::ParseHTTPTime(value);
+		return;
+	}
+	if(name=="Content-Type")
+	{
+		contentType=value;
+		return;
+	}
+	customHeaders[name]=value;
+}
+
+void HttpRequestHeader::ParseLine(const string& line)
+{
+	size_t colonPos=line.find(':');
+	if(colonPos==string::npos)
+	{
+		vector<string> items=Util::Extract(line);
+		if(items[0]==Http::methodStrings[HttpPost])
+			method=HttpPost;
+		else
+		{
+			if(items[0]!=Http::methodStrings[HttpGet])
+				throw HttpException(HttpMethodNotAllowed,"Only POST and GET methods are supported");
+		}
+		//Parameters from resource will be extracted later.
+		//They are not related to the header itself.
+		resource=items[1];
+	}
+	else
+	{
+		string name=line.substr(0,colonPos);
+		if(line.length()<colonPos+3)
+			throw HttpException(HttpBadRequest,"Unexpected end of line in the header");
+		string value=line.substr(colonPos+2);
+		ParseHeaderItem(name,value);
+	}
+}
+
+string HttpRequestHeader::BuildHeader()
+{
+	ostringstream r;
+	r<<Http::methodStrings[method]<<" "<<resource<<" "<<"HTTP/1.1"<<endl;
+	r<<"Host: "<<host<<endl;
+	r<<"User-Agent: "<<userAgent<<endl;
+	if(!contentType.empty())
+	r<<"Content-Type: "<<contentType<<endl;
+	if(contentLength!=0)
+		r<<"Content-Length: "<<contentLength<<endl;
+	if(rangeFrom!=-1)
+	{
+		r<<"Range: bytes="<<rangeFrom<<"-";
+		if(rangeTo!=-1)
+			r<<rangeTo;
+		r<<endl;
+	}
+	if(modifyTime!=0)
+		r<<"If-Modified-Since: "<<Util::MakeHTTPTime(modifyTime)<<endl;
+	if(!cookies.empty())
+	{
+		r<<"Cookie: ";
+		for(map<string,string>::iterator iter=cookies.begin();iter!=cookies.end();iter++)
+		{
+			if(iter!=cookies.begin())
+				r<<"; ";
+			r<<iter->first<<"="<<iter->second;
+		}
+		r<<endl;
+	}
+	for(map<string,string>::iterator iter=customHeaders.begin();iter!=customHeaders.end();iter++)
+		r<<iter->first<<": "<<iter->second<<endl;
+	r<<"Connection: keep-alive"<<endl;
+	r<<endl;
+	return r.str();
+}
+
+void HttpRequestHeader::ParseCookies(const string& st)
+{
+	string t=st;
+	string p,l,r;
+	size_t sepPos,eqPos;
+	while(!t.empty())
+	{
+		sepPos=t.find(';');
+		if(sepPos!=string::npos)
+		{
+			p=t.substr(0,sepPos);
+			t.erase(0,sepPos+1);
+		}
+		else
+		{
+			p=t;
+			t.clear();
+		}
+		Util::Trim(p);
+		eqPos=p.find('=');
+		if(eqPos==string::npos)
+			throw runtime_error("Malformed cookie in HTTP request");
+		l=Util::StringToLower(p.substr(0,eqPos));
+		r=Util::StringToLower(p.substr(eqPos+1));
+		cookies[l]=r;
+	}
+}
+
+//HttpResponseHeader methods
+
+HttpResponseHeader::HttpResponseHeader():result(HttpOK),contentLength(0),rangeFrom(-1),modifyTime(0),expireTime(0),server(Http::serverString)
+{
+}
+
+void HttpResponseHeader::ParseHeaderItem(const string& name,const string& value)
+{
+	//Some additional verifications applied to ensure nothing wrong happens later.
+	if(name=="Server")
+	{
+		server=value;
+		return;
+	}
+	if(name=="Content-Length")
+	{
+		contentLength=atoi(value.c_str());
+		if(contentLength<0)
+			throw HttpException(HttpBadRequest,"Malformed header.");
+		return;
+	}
+	if(name=="Content-Type")
+	{
+		contentType=value;
+		return;
+	}
+	if(name=="Location")
+	{
+		location=value;
+		return;
+	}
+	if(name=="Content-Range")
+	{
+		size_t sppos=value.find(' ');
+		size_t mpos=value.find('-');
+		size_t spos=value.find('/');
+		if((sppos==string::npos)||(mpos==string::npos)||(spos==string::npos))
+			throw HttpException(HttpBadRequest,"Malformed header.");
+		rangeFrom=atoll(value.substr(sppos+1,mpos-sppos-1).c_str());
+		rangeTo=atoll(value.substr(mpos+1,spos-mpos-1).c_str());
+		rangeTotal=atoll(value.substr(spos+1).c_str());
+		if((rangeFrom<0)||(rangeTo<0)||(rangeTotal<0)||(rangeTo<rangeFrom)||(rangeFrom>rangeTotal)||(rangeTo>rangeTotal))
+			throw HttpException(HttpBadRequest,"Malformed header.");
+		return;
+	}
+	if(name=="Last-Modified")
+	{
+		modifyTime=Util::ParseHTTPTime(value);
+		return;
+	}
+	if(name=="Expires")
+	{
+		expireTime=Util::ParseHTTPTime(value);
+		return;
+	}
+	if(name=="Set-Cookie")
+	{
+		ParseCookies(value);
+		return;
+	}
+	customHeaders[name]=value;
+}
+
+void HttpResponseHeader::ParseLine(const string& line)
+{
+	size_t colonPos=line.find(':');
+	if(colonPos==string::npos)
+	{
+		vector<string> items=Util::Extract(line);
+		int code=atoi(items[1].c_str());
+		for(int i=0;Http::resultCodes[i]!=0;i++)
+		{
+			if(Http::resultCodes[i]==code)
+			{
+				result=static_cast<HttpResult>(i);
+				break;
+			}
 		}
 	}
-	if(line.compare(0,4,"POST")==0)
+	else
 	{
-		isPost=true;
-		size_t spacePos=line.find(' ',6);
-		if(spacePos!=string::npos)
-			resource=line.substr(5,spacePos-5);
-		else
-			resource=line.substr(5);
+		string name=line.substr(0,colonPos);
+		if(line.length()<colonPos+3)
+			throw HttpException(HttpBadRequest,"Unexpected end of line in the header");
+		string value=line.substr(colonPos+2);
+		ParseHeaderItem(name,value);
 	}
-	if(line.compare(0,4,"Host")==0)
-		host=line.substr(6);
-	if(line.compare(0,10,"User-Agent")==0)
-		userAgent=line.substr(12);
-	if(line.compare(0,5,"Range")==0)
-	{
-		size_t eqpos=line.find('=');
-		size_t mpos=line.find('-');
-		rangeFrom=atoll(line.substr(eqpos+1,mpos-eqpos-1).c_str());
-		string t=line.substr(mpos+1);
-		if(!t.empty())
-			rangeTo=atoll(t.c_str());
-	}
-	if(line.compare(0,14,"Content-Length")==0)
-		postContentLength=atoi(line.substr(16).c_str());
-	if(line.compare(0,6,"Cookie")==0)
-		ParseCookies(line.substr(8));
 }
 
-void HttpRequest::ParseParameters(const string& st)
+string HttpResponseHeader::BuildHeader()
+{
+	ostringstream r;
+	r<<"HTTP/1.1 "<<Http::resultStrings[result]<<endl;
+	time_t timeNow;
+	r<<"Date: "<<Util::MakeHTTPTime(time(&timeNow))<<endl;
+	r<<"Server: "<<server<<endl;
+	if(!location.empty())
+		r<<"Location: "<<location<<endl;
+	else
+	{
+		if(modifyTime!=0)
+			r<<"Last-Modified: "<<Util::MakeHTTPTime(expireTime)<<endl;
+		if(expireTime!=0)
+			r<<"Expires: "<<Util::MakeHTTPTime(expireTime)<<endl;
+	}
+	r<<"Content-Length: "<<contentLength<<endl;
+	if(rangeFrom!=-1)
+		r<<"Content-Range: bytes "<<rangeFrom<<"-"<<rangeTo<<"/"<<rangeTotal<<endl;
+	r<<"Content-Type: "<<contentType<<endl;
+	if(!cookies.empty())
+	{
+		time_t t;
+		time(&t);
+		for(map<string,ResponseCookie>::iterator iter=cookies.begin();iter!=cookies.end();iter++)
+		{
+			r<<"Set-Cookie: ";
+			r<<iter->first<<"="<<iter->second.value;
+			if(iter->second.expireTime!=0)
+				r<<"; expires="<<Util::MakeHTTPTime(iter->second.expireTime);
+			r<<"; path=/"<<endl;
+		}
+	}
+	for(map<string,string>::iterator iter=customHeaders.begin();iter!=customHeaders.end();iter++)
+		r<<iter->first<<": "<<iter->second<<endl;
+	r<<"Connection: keep-alive"<<endl;
+	r<<endl;
+	return r.str();
+}
+
+void HttpResponseHeader::ParseCookies(const string& st)
+{
+	size_t eqpos=st.find("name=");
+	eqpos+=4;
+	size_t scpos=st.find(';',eqpos);
+	size_t eq2pos=st.find("expires=");
+	eq2pos+=7;
+	size_t sc2pos=st.find(';',eq2pos);
+	string name=st.substr(0,eqpos);
+	cookies[name].value=st.substr(eqpos+1,scpos-eqpos-1);
+	if(eq2pos!=string::npos)
+		cookies[name].expireTime=Util::ParseHTTPTime(st.substr(eq2pos+1,sc2pos-eq2pos-1));
+	else
+		cookies[name].expireTime=0;
+}
+
+//HttpServerContext methods
+
+HttpServerContext::HttpServerContext(Server* s):server(s),nextUriNum(0),nextHostNum(0),fileHandler(NULL),errorHandler(NULL),headerSent(false),sessionObject(NULL)
+{
+}
+
+//"multipart/form-data" form handler helper class
+class MultipartHelper:public Filter
+{
+private:
+	string helperBuffer;
+	string delimiter;
+	HttpServerContext* context;
+	IFileUploadHandler* handler;
+	bool Gather();
+public:
+	MultipartHelper(InputStream* source,const string& d,HttpServerContext* c,IFileUploadHandler* h):Filter(source),delimiter(d),context(c),handler(h)
+	{
+	}
+	int ReadSomeUnbuffered(void* buf,int len);
+	void Process();
+};
+
+bool MultipartHelper::Gather()
+{
+	string st=sourceStream->ReadSome();
+	helperBuffer+=st;
+	return !st.empty();
+}
+
+int MultipartHelper::ReadSomeUnbuffered(void* buf,int len)
+{
+	//Read until next delimiter or until end of stream.
+	while(helperBuffer.length()<=delimiter.length())
+	{
+		if(!Gather())
+			break;
+	}
+	if(helperBuffer.empty())
+	{
+		eof=true;
+		return 0;
+	}
+	if(sourceStream->Eof())
+	{
+		int l=min<int>(helperBuffer.length(),len);
+		memcpy(buf,helperBuffer.c_str(),l);
+		helperBuffer.erase(0,l);
+		return l;
+	}
+	size_t dpos=helperBuffer.find(delimiter);
+	if(dpos==string::npos)
+	{
+		int l=min<int>(helperBuffer.length()-delimiter.length(),len);
+		memcpy(buf,helperBuffer.c_str(),l);
+		helperBuffer.erase(0,l);
+		return l;
+	}
+	else
+	{
+		int l=min<int>(dpos,len);
+		memcpy(buf,helperBuffer.c_str(),l);
+		helperBuffer.erase(0,l);
+		return l;
+	}
+}
+
+void MultipartHelper::Process()
+{
+	size_t dpos;
+	for(;;)
+	{
+		if(Gather())
+		{
+			dpos=helperBuffer.find(delimiter);
+			if(dpos!=string::npos)
+				break;
+		}
+		else
+			throw HttpException(HttpBadRequest,"No delimiters found.");
+	}
+	helperBuffer.erase(0,dpos+delimiter.size());
+	while(helperBuffer.size()<2)
+	{
+		if(!Gather())
+			throw HttpException(HttpBadRequest,"No delimiters found.");
+	}
+	//Determine line ending style.
+	string lineEnding;
+	if(helperBuffer[0]=='\n')
+		lineEnding="\n";
+	else
+		lineEnding=helperBuffer.substr(0,2);
+	delimiter=lineEnding+"--"+delimiter;
+	helperBuffer.erase(lineEnding.length());
+	//Now delimiter string is ready for actual usage
+	for(;;)
+	{
+		if(helperBuffer.empty())
+			Gather();
+		//No actual reason to throw exception here
+		if(helperBuffer.empty())
+			return;
+		//multipart/form-data has the following structure:
+		//
+		//--delimiter
+		//data
+		//--delimiter
+		//data
+		//--delimiter--      <-finish
+		if(helperBuffer[0]='-')
+			return;
+		//From now on, we use our own InputStream implementation to read
+		//until next delimiter.
+		//Reset it's state and skip to next line.
+		eof=0;
+		ReadLine();
+		//Well, now we're at the data headers.
+		string name;
+		string filename;
+		for(;;)
+		{
+			string st=ReadLine();
+			if(st.empty())
+				break;
+			size_t namepos=st.find("name=\"");
+			if(namepos!=string::npos)
+			{
+				namepos+=5;
+				size_t name2pos=st.find('\"',namepos+1);
+				if(name2pos==string::npos)
+					throw HttpException(HttpBadRequest,"Malformed header in multipart/form-data");
+				name=st.substr(namepos+1,name2pos-namepos-1);
+				size_t filenamepos=st.find("filename=\"",name2pos+1);
+				if(filenamepos!=string::npos)
+				{
+					filenamepos+=9;
+					size_t filename2pos=st.find('\"',filenamepos+1);
+					if(filename2pos==string::npos)
+						throw HttpException(HttpBadRequest,"Malformed header in multipart/form-data");
+					filename=st.substr(filenamepos+1,filename2pos-filenamepos-1);
+				}
+			}
+		}
+		//Yeah, finally - we're exactly at the data.
+		if(!filename.empty())
+		{
+			if(handler)
+				handler->HandleFileUpload(context,filename,this);
+		}
+		else
+		{
+			string value;
+			while(!Eof())
+				value+=ReadSome();
+			context->parameters[name]=value;
+		}
+	}
+}
+//
+
+void HttpServerContext::ProcessPostData()
+{
+	if(requestHeader.contentLength==0)
+		return;
+	if(requestHeader.contentType=="application/x-www-form-urlencoded")
+		ParseParameters(Read(requestHeader.contentLength));
+	else
+	{
+		size_t eqpos=requestHeader.contentType.find('=');
+		if(eqpos==string::npos)
+			throw HttpException(HttpBadRequest,"Malformed header for multipart data");
+		string delimiter=requestHeader.contentType.substr(eqpos+1);
+		MultipartHelper helper(this,delimiter,this,fileHandler);
+		helper.Process();
+	}
+}
+
+void HttpServerContext::ParseURIAsParameters(int num)
+{
+	if(requestHeader.resource.empty())
+		return;
+	if(requestHeader.resource[0]=='/')
+		requestHeader.resource.erase(0,1);
+	size_t slashPos;
+	string t;
+	for(int i=0;(num==0)||(i<num);i++)
+	{
+		if(requestHeader.resource.empty())
+			break;
+		slashPos=requestHeader.resource.find('/');
+		if(slashPos!=string::npos)
+		{
+			t=requestHeader.resource.substr(0,slashPos);
+			requestHeader.resource.erase(0,slashPos+1);
+		}
+		else
+		{
+			t=requestHeader.resource;
+			requestHeader.resource.clear();
+		}
+		t=Util::URLDecode(t);
+		ostringstream l;
+		l<<"uri"<<nextUriNum;
+		parameters[l.str()]=t;
+		nextUriNum++;
+	}
+}
+
+void HttpServerContext::ParseHostAsParameters(int num)
+{
+	if(requestHeader.host.empty())
+		return;
+	if(requestHeader.host[requestHeader.host.length()-1]=='.')
+		requestHeader.host.erase(requestHeader.host.length()-1);
+	size_t dotPos;
+	string t;
+	for(int i=0;(num==0)||(i<num);i++)
+	{
+		if(requestHeader.host.empty())
+			break;
+		dotPos=requestHeader.host.rfind('.');
+		if(dotPos!=string::npos)
+		{
+			t=requestHeader.host.substr(dotPos+1);
+			requestHeader.host.erase(dotPos);
+		}
+		else
+		{
+			t=requestHeader.host;
+			requestHeader.host.clear();
+		}
+		ostringstream l;
+		l<<"host"<<nextHostNum;
+		parameters[l.str()]=t;
+		nextHostNum++;
+	}
+}
+
+void HttpServerContext::ParseParameters(const string& st)
 {
 	string t=st;
 	string p,l,r;
@@ -83,321 +602,55 @@ void HttpRequest::ParseParameters(const string& st)
 	}
 }
 
-void HttpRequest::ParseURIAsParameters()
+void HttpServerContext::Redirect(const string& location)
 {
-	if(resource.empty())
+	responseHeader.result=HttpSeeOther;
+	responseHeader.location=location;
+	responseBody<<"<html><body><a href=\""<<location<<"\">"<<location<<"</a></body></html>";
+}
+
+void HttpServerContext::RedirectPermanent(const string& location)
+{
+	responseHeader.result=HttpMovedPermanently;
+	responseHeader.location=location;
+	responseBody<<"<html><body><a href=\""<<location<<"\">"<<location<<"</a></body></html>";
+}
+
+void HttpServerContext::SendResponseHeader()
+{
+	if(headerSent)
 		return;
-	if(resource[0]=='/')
-		resource.erase(0,1);
-	size_t slashPos;
-	string t;
-	int i=0;
-	while(!resource.empty())
-	{
-		slashPos=resource.find('/');
-		if(slashPos!=string::npos)
-		{
-			t=resource.substr(0,slashPos);
-			resource.erase(0,slashPos+1);
-		}
-		else
-		{
-			t=resource;
-			resource.clear();
-		}
-		t=Util::URLDecode(t);
-		ostringstream l;
-		l<<"uri"<<i;
-		parameters[l.str()]=t;
-		i++;
-	}
+	Write(responseHeader.BuildHeader());
+	headerSent=true;
 }
 
-void HttpRequest::ParseHostAsParameters()
+void HttpServerContext::SendResponse()
 {
-	if(host.empty())
+	if(headerSent)
 		return;
-	if(host[host.length()-1]=='.')
-		resource.erase(host.length()-1);
-	size_t dotPos;
-	string t;
-	int i=0;
-	while(!host.empty())
-	{
-		dotPos=host.rfind('.');
-		if(dotPos!=string::npos)
-		{
-			t=host.substr(dotPos+1);
-			host.erase(dotPos);
-		}
-		else
-		{
-			t=host;
-			host.clear();
-		}
-		ostringstream l;
-		l<<"host"<<i;
-		parameters[l.str()]=t;
-		i++;
-	}
+	responseHeader.contentLength=responseBody.str().length();
+	SendResponseHeader();
+	Write(responseBody.str());
 }
 
-void HttpRequest::ParseCookies(const string& st)
+void HttpServerContext::StartSession(HttpSessionObject* sessionObject)
 {
-	string t=st;
-	string p,l,r;
-	size_t sepPos,eqPos;
-	while(!t.empty())
-	{
-		sepPos=t.find(';');
-		if(sepPos!=string::npos)
-		{
-			p=t.substr(0,sepPos);
-			t.erase(0,sepPos+1);
-		}
-		else
-		{
-			p=t;
-			t.clear();
-		}
-		Util::Trim(p);
-		eqPos=p.find('=');
-		if(eqPos==string::npos)
-			throw runtime_error("Malformed cookies in HTTP request");
-		l=Util::StringToLower(p.substr(0,eqPos));
-		r=Util::StringToLower(p.substr(eqPos+1));
-		cookies[l]=r;
-	}
+	server->StartSession(sessionObject,this);
 }
 
-HttpResponse::HttpResponse():result("HTTP/1.0 200 OK"),contentType("text/html"),headersSent(false),contentLength(0),rangeFrom(-1),expireTime(0)
+void HttpServerContext::ServeFile(const string& fileName,bool download)
+{
+	server->ServeFile(fileName,this,download);
+}
+
+HttpSessionObject::~HttpSessionObject()
 {
 }
 
-void HttpResponse::SetResultNotFound()
-{
-	result="HTTP/1.0 404 Not Found";
-}
-
-void HttpResponse::SetResultError()
-{
-	result="HTTP/1.0 500 Internal Server Error";
-}
-
-void HttpResponse::Write(const string& buf)
-{
-	body<<buf;
-}
-
-string HttpResponse::BuildHeader()
-{
-	ostringstream r;
-	r<<result<<endl;
-	time_t timeNow;
-	r<<"Date: "<<Util::MakeHTTPTime(time(&timeNow))<<endl;
-	r<<"Server: madfish-webtoolkit"<<endl;
-	if(!location.empty())
-		r<<"Location: "<<location<<endl;
-	else
-	{
-		if(expireTime!=0)
-			r<<"Expires: "<<Util::MakeHTTPTime(expireTime)<<endl;
-		if(contentLength==0)
-			contentLength=body.str().size();
-		r<<"Content-Length: "<<contentLength<<endl;
-		if(rangeFrom!=-1)
-			r<<"Content-Range: bytes "<<rangeFrom<<"-"<<rangeTo<<"/"<<rangeTotal<<endl;
-		r<<"Content-Type: "<<contentType<<endl;
-	}
-	if(!cookies.empty())
-	{
-		time_t t;
-		time(&t);
-		for(size_t i=0;i<cookies.size();i++)
-		{
-			r<<"Set-Cookie: ";
-			r<<cookies[i].name<<"="<<cookies[i].value;
-			if(cookies[i].expireTime!=0)
-			{
-				r<<"; expires=";
-				time_t t2=t+cookies[i].expireTime;
-				r<<Util::MakeHTTPTime(t2);
-			}
-			r<<"; path=/"<<endl;
-		}
-	}
-	for(size_t i=0;i<customHeaders.size();i++)
-		r<<customHeaders[i].first<<": "<<customHeaders[i].second<<endl;
-	r<<"Connection: close"<<endl;
-	r<<endl;
-	return r.str();
-}
-
-void HttpResponse::DirectSend(const string& buf)
-{
-	DirectSend(buf.c_str(),buf.length());
-}
-
-void HttpResponse::Send()
-{
-	if(!headersSent)
-	{
-		DirectSend(BuildHeader());
-		headersSent=true;
-	}
-	DirectSend(body.str());
-	body.str("");
-	body.clear();
-}
-
-void HttpResponse::SetContentType(const string& st)
-{
-	contentType=st;
-}
-
-void HttpResponse::SetContentLength(i64 len)
-{
-	contentLength=len;
-}
-
-void HttpResponse::Clean()
-{
-	body.str("");
-	body.clear();
-}
-
-void HttpResponse::Redirect(const string& st)
-{
-	result="HTTP/1.0 301 Moved Permanently";
-	location=st;
-}
-
-void HttpResponse::SetContentRange(i64 from,i64 to,i64 total)
-{
-	result="HTTP/1.0 206 Partial Content";
-	rangeFrom=from;
-	rangeTo=to;
-	rangeTotal=total;
-}
-
-void HttpResponse::SetExpires(time_t t)
-{
-	expireTime=t;
-}
-
-void HttpResponse::SetCookie(const string& name,const string& value,int expireTime)
-{
-	Cookie cookie;
-	cookie.name=name;
-	cookie.value=value;
-	cookie.expireTime=expireTime;
-	cookies.push_back(cookie);
-}
-
-void HttpResponse::AddCustomHeader(const string& name,const string& value)
-{
-	customHeaders.push_back(make_pair(name,value));
-}
-
-HostDispatcher::HostDispatcher():defaultHandler(NULL),autoParse(false)
+IFileUploadHandler::~IFileUploadHandler()
 {
 }
 
-void HostDispatcher::AddMapping(const string& st,IHttpRequestHandler* handler)
+IHttpHandler::~IHttpHandler()
 {
-	dispatchMap[st]=handler;
-}
-
-void HostDispatcher::SetDefaultHandler(IHttpRequestHandler* handler)
-{
-	defaultHandler=handler;
-}
-
-void HostDispatcher::EnableAutoParse()
-{
-	autoParse=true;
-}
-
-void HostDispatcher::Handle(HttpRequest* request,HttpResponse* response)
-{
-	for(map<string,IHttpRequestHandler*>::iterator iter=dispatchMap.begin();iter!=dispatchMap.end();iter++)
-	{
-		if((request->host.length()>=iter->first.length())&&(request->host.compare(request->host.length()-iter->first.length(),iter->first.length(),iter->first)==0))
-		{
-			request->host.erase(request->host.length()-iter->first.length());
-			if(request->host[request->host.length()-1]=='.')
-				request->host.resize(request->host.length()-1);
-			if(autoParse)
-				request->ParseHostAsParameters();
-			iter->second->Handle(request,response);
-			return;
-		}
-	}
-	if(defaultHandler!=NULL)
-	{
-		if(autoParse)
-			request->ParseHostAsParameters();
-		defaultHandler->Handle(request,response);
-	}
-	else
-		Server::Instance().HandleNotFound(response);
-}
-
-URIDispatcher::URIDispatcher():defaultHandler(NULL),autoParse(false)
-{
-}
-
-void URIDispatcher::AddMapping(const string& st,IHttpRequestHandler* handler)
-{
-	dispatchMap[st]=handler;
-}
-
-void URIDispatcher::SetDefaultHandler(IHttpRequestHandler* handler)
-{
-	defaultHandler=handler;
-}
-
-void URIDispatcher::EnableAutoParse()
-{
-	autoParse=true;
-}
-
-void URIDispatcher::Handle(HttpRequest* request,HttpResponse* response)
-{
-	for(map<string,IHttpRequestHandler*>::iterator iter=dispatchMap.begin();iter!=dispatchMap.end();iter++)
-	{
-		if((request->resource.length()>=iter->first.length())&&(request->resource.compare(0,iter->first.length(),iter->first)==0))
-		{
-			request->resource.erase(0,iter->first.length());
-			if(autoParse)
-				request->ParseURIAsParameters();
-			iter->second->Handle(request,response);
-			return;
-		}
-	}
-	if(defaultHandler!=NULL)
-	{
-		if(autoParse)
-			request->ParseURIAsParameters();
-		defaultHandler->Handle(request,response);
-	}
-	else
-		Server::Instance().HandleNotFound(response);
-}
-
-RootIndexRedirector::RootIndexRedirector():indexURI("/index")
-{
-}
-
-void RootIndexRedirector::SetIndexURI(const string& uri)
-{
-	indexURI=uri;
-}
-
-void RootIndexRedirector::Handle(HttpRequest* request,HttpResponse* response)
-{
-	if(request->resource=="/")
-		response->Redirect(indexURI);
-	else
-		Server::Instance().HandleNotFound(response);
 }
