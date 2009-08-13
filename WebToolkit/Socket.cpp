@@ -115,7 +115,7 @@ Listener::Listener(int portNumber,const string& ip)
 	stSockAddr.sin_addr.s_addr=inet_addr(ip.c_str());
 	if(bind(sock,(const sockaddr*)&stSockAddr,sizeof (stSockAddr))<0)
 		throw IOException("Failed to bind socket");
-	if(listen(sock,10)<0)
+	if(listen(sock,100)<0)
 		throw IOException("Failed to start listening");
 }
 
