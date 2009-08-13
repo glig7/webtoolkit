@@ -55,8 +55,8 @@ bool BaseSocket::Wait(int timeout)
 	FD_ZERO(&readfds);
 	FD_SET(sock,&readfds);
 	timeval tv;
-	tv.tv_sec=0;
-	tv.tv_usec=timeout*1000;
+	tv.tv_sec=timeout/1000;
+	tv.tv_usec=(timeout%1000)*1000;
 #ifndef WIN32
 	sigset_t new_set,old_set;
 	sigemptyset(&new_set);
