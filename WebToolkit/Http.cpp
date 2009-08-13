@@ -41,7 +41,7 @@ const char* Http::serverString="madfish-webtoolkit/1.1";
 
 //HttpRequestHeader methods
 
-HttpRequestHeader::HttpRequestHeader():method(HttpGet),modifyTime(0),rangeFrom(-1),rangeTo(-1),contentLength(0),userAgent(Http::serverString)
+HttpRequestHeader::HttpRequestHeader():method(HttpGet),modifyTime(0),rangeFrom(-1),rangeTo(-1),contentLength(0),userAgent(Http::serverString),keepConnection(false)
 {
 }
 
@@ -96,6 +96,15 @@ void HttpRequestHeader::ParseHeaderItem(const string& name,const string& value)
 		contentType=value;
 		return;
 	}
+	if(name=="Connection")
+	{
+		string t=Util::StringToLower(value);
+		if(t.find("keep-alive")!=string::npos)
+			keepConnection=true;
+		if(t.find("close")!=string::npos)
+			keepConnection=false;
+		return;
+	}
 	customHeaders[name]=value;
 }
 
@@ -115,6 +124,8 @@ void HttpRequestHeader::ParseLine(const string& line)
 		//Parameters from resource will be extracted later.
 		//They are not related to the header itself.
 		resource=items[1];
+		if(items[2]!="HTTP/1.0")
+			keepConnection=true;
 	}
 	else
 	{

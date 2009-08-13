@@ -48,7 +48,7 @@ bool ClientRequest::Work()
 		requestHeader.ParseLine(st);
 	}
 	if(requestHeader.resource.empty())
-		return true;
+		return requestHeader.keepConnection;
 	LOG(LogInfo)<<clientIP<<" "<<Http::methodStrings[requestHeader.method]<<" "<<requestHeader.resource;
 	if(requestHeader.cookies.find("sessiontoken")!=requestHeader.cookies.end())
 		sessionObject=server->GetSessionObject(requestHeader.cookies["sessiontoken"]);
@@ -86,7 +86,7 @@ bool ClientRequest::Work()
 	while(!Eof())
 		ReadSome();
 	LOG(LogVerbose)<<Http::resultStrings[responseHeader.result];
-	return true;
+	return requestHeader.keepConnection;
 }
 
 Client::Client(Server* serv,Socket* sock):server(serv),socket(sock)

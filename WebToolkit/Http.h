@@ -68,6 +68,7 @@ public:
 	string contentType; //The mime type of the content.
 	int contentLength; //Content-Length header value. Should be 0 if not used.
 	map<string,string> customHeaders; //Allows to set some custom header.
+	bool keepConnection; //Is this connection persistent
 	//
 	HttpRequestHeader();
 	void ParseLine(const string& line);
