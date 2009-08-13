@@ -60,7 +60,8 @@ unsigned int Thread::GetCurrentThreadId()
 #ifdef WIN32
 	return static_cast<unsigned int>(::GetCurrentThreadId());
 #else
-	return reinterpret_cast<unsigned int>(pthread_self());
+	pthread_t t=pthread_self();
+	return *(reinterpret_cast<unsigned int*>(&t));
 #endif
 }
 
