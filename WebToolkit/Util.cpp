@@ -189,6 +189,7 @@ string Util::Timestamp(time_t t)
 	ostringstream r;
 	tm* tms=localtime(&t);
 	r<<tms->tm_year+1900<<"/";
+	tms->tm_mon+=1;
 	if(tms->tm_mon<10)
 		r<<"0";
 	r<<tms->tm_mon<<"/";
