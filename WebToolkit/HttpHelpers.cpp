@@ -46,6 +46,8 @@ void Dispatcher::Invoke(const string& what,HttpServerContext* context)
 		context->fileHandler=mapping.fileHandler;
 	if(mapping.allowedMethod!=context->requestHeader.method)
 		throw HttpException(HttpMethodNotAllowed,string("This page should be accessed using ")+Http::methodStrings[mapping.allowedMethod]);
+	if(mapping.allowedMethod==HttpPost)
+		context->ProcessPostData();
 	mapping.handler->Handle(context);
 }
 

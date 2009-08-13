@@ -137,7 +137,6 @@ private:
 protected:
 	void ParseParameters(const string& st);
 	HttpServerContext(Server* s);
-	void ProcessPostData();
 public:
 	Server* server; //Server isntance, to which this request happened.
 	IHttpHandler* errorHandler; //Error handler.
@@ -149,6 +148,9 @@ public:
 	map<string,string> parameters; //Parameters as name-value pairs.
 	HttpSessionObject* sessionObject; //Associated session object, if present.
 	ostringstream responseBody; //Generated output goes here.
+	//Call this when you need to process post data.
+	//Called automatically by dispatchers for Post resources.
+	void ProcessPostData();
 	//Parse specifed number of uri sections (/*/) as parameters. num=0 means all.
 	//These parameters will have names "uri#", where # starts from 0.
 	void ParseURIAsParameters(int num=0);

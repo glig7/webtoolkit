@@ -102,6 +102,10 @@ void FileServer::Handle(HttpServerContext* context)
 {
 	if(context->requestHeader.resource=="/favicon.ico")
 	{
+		time_t t;
+		time(&t);
+		t+=86400;
+		context->responseHeader.expireTime=t;
 		context->ServeFile(config.favIcon);
 		return;
 	}

@@ -59,11 +59,7 @@ bool ClientRequest::Work()
 		requestHeader.resource.erase(qpos);
 		ParseParameters(parameters);
 	}
-	if(requestHeader.contentLength!=0)
-	{
-		dataLeft=requestHeader.contentLength;
-		ProcessPostData();
-	}
+	dataLeft=requestHeader.contentLength;
 	try
 	{
 		server->handler->Handle(this);
@@ -86,7 +82,10 @@ bool ClientRequest::Work()
 			errorHandler->Handle(this);
 	}
 	SendResponse();
-	LOG(LogVerbose)<<"Finished.";
+	//Skip the rest of unused post data
+	while(!Eof())
+		ReadSome();
+	LOG(LogVerbose)<<Http::resultStrings[responseHeader.result];
 	return true;
 }
 

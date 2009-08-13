@@ -58,7 +58,7 @@ void Thread::StartThread(ThreadProc threadProc,void* arg)
 unsigned int Thread::GetCurrentThreadId()
 {
 #ifdef WIN32
-	return reinterpret_cast<unsigned int>(::GetCurrentThreadId());
+	return static_cast<unsigned int>(::GetCurrentThreadId());
 #else
 	return reinterpret_cast<unsigned int>(pthread_self());
 #endif

@@ -118,6 +118,7 @@ void Server::ServeFile(const string& fileName,HttpServerContext* context,bool do
 		context->responseHeader.result=HttpNotModified;
 		return;
 	}
+	context->responseHeader.modifyTime=modifyTime;
 	File in(fileName,false);
 	i64 contentLength;
 	if(context->requestHeader.rangeFrom==-1)
