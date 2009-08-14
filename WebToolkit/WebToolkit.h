@@ -1,3 +1,11 @@
+/*
+	This file is a part of madfish-webtoolkit project.
+	http://code.google.com/p/madfish-webtoolkit/
+
+	(c) 2009 Alexander "Mad Fish" Chehovsky
+	See License.txt for licensing information.
+*/
+
 #ifndef _WEBTOOLKIT_H
 #define	_WEBTOOLKIT_H
 
