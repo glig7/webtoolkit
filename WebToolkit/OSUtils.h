@@ -14,6 +14,7 @@ class Environment
 public:
 	static bool terminated;
 	static void Init();
+	static bool CheckForTermination();
 	static void WaitForTermination();
 };
 

@@ -22,12 +22,6 @@ BOOL WINAPI HandlerRoutine(DWORD dwCtrlType)
 }
 #else
 #include <signal.h>
-
-void signal_handler(int sig_num)
-{
-    signal(sig_num,signal_handler);
-	Environment::terminated=true;
-}
 #endif
 
 void Environment::Init()
@@ -35,18 +29,40 @@ void Environment::Init()
 #ifdef WIN32
 	SetConsoleCtrlHandler(HandlerRoutine,TRUE);
 #else
-	signal(SIGINT,signal_handler);
-	signal(SIGTERM,signal_handler);
-	signal(SIGPIPE,SIG_IGN);
+	//Block all signals
+	sigset_t sigset;
+	sigemptyset(&sigset);
+	sigfillset(&sigset);
+	sigprocmask(SIG_BLOCK,&sigset,NULL);
+#endif
+}
+
+bool CheckForTermination()
+{
+#ifdef WIN32
+	return terminated;
+#else
+	sigset_t sigset;
+	sigpending(&sigset);
+	return (sigismember(&sigset,SIGINT)||sigismember(&sigset,SIGTERM)||sigismember(&sigset,SIGQUIT));
 #endif
 }
 
 void Environment::WaitForTermination()
 {
+#ifdef WIN32
 	while(!terminated)
 		Thread::Sleep(200);
+#else
+    sigset_t wait_mask;
+    sigemptyset(&wait_mask);
+    sigaddset(&wait_mask,SIGINT);
+    sigaddset(&wait_mask,SIGQUIT);
+    sigaddset(&wait_mask,SIGTERM);
+    int sig = 0;
+    sigwait(&wait_mask,&sig);
+#endif
 }
-
 
 struct EnvironmentInit
 {

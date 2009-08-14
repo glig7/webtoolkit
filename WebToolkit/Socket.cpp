@@ -50,7 +50,7 @@ BaseSocket::BaseSocket(int sock)
 BaseSocket::~BaseSocket()
 {
 	if(sock>=0)
-#ifdef WIN32		
+#ifdef WIN32
 		closesocket(sock);
 #else
 		close(sock);
@@ -65,17 +65,7 @@ bool BaseSocket::Wait(int timeout)
 	timeval tv;
 	tv.tv_sec=timeout/1000;
 	tv.tv_usec=(timeout%1000)*1000;
-#ifndef WIN32
-	sigset_t new_set,old_set;
-	sigemptyset(&new_set);
-	sigaddset(&new_set,SIGINT);
-	sigaddset(&new_set,SIGTERM);
-	sigprocmask(SIG_BLOCK,&new_set,&old_set);
-#endif
 	select(sock+1,&readfds,NULL,NULL,&tv);
-#ifndef WIN32
-	sigprocmask(SIG_SETMASK,&old_set,NULL);
-#endif
 	return FD_ISSET(sock,&readfds)!=0;
 }
 

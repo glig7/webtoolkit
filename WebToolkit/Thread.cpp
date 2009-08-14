@@ -35,9 +35,6 @@ void*
 #endif
 thread_func(void* d)
 {
-#ifndef WIN32
-	signal(SIGPIPE,SIG_IGN);
-#endif
 	srand(static_cast<unsigned int>(time(NULL)));
 	ThreadArgs* args=reinterpret_cast<ThreadArgs*>(d);
 	(*args->threadProc)(args->arg);
