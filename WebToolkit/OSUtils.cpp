@@ -37,7 +37,7 @@ void Environment::Init()
 #endif
 }
 
-bool CheckForTermination()
+bool Environment::CheckForTermination()
 {
 #ifdef WIN32
 	return terminated;
