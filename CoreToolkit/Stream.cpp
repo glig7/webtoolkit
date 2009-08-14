@@ -8,6 +8,8 @@
 
 #include "Stream.h"
 
+#include <string.h>
+
 using namespace std;
 
 namespace CoreToolkit

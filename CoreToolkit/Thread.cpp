@@ -9,9 +9,11 @@
 #include "Thread.h"
 
 #include <time.h>
+#include <stdlib.h>
 
 #ifndef WIN32
 #include <signal.h>
+#include <unistd.h>
 #endif
 
 using namespace std;

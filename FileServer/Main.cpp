@@ -8,8 +8,10 @@
 
 #include "Main.h"
 
+#include <algorithm>
 #include <iomanip>
 #include <time.h>
+#include <stdlib.h>
 
 using namespace std;
 using namespace CoreToolkit;

@@ -12,7 +12,9 @@
 #include "Util.h"
 
 #include <sstream>
+#include <stdexcept>
 #include <time.h>
+#include <stdlib.h>
 
 using namespace std;
 
