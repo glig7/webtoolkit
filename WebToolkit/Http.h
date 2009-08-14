@@ -137,7 +137,7 @@ class Server; //Trying not to take additional header dependencies.
 //Class is abstract. It is fully implemented in ClientRequest class
 //
 //Why extend InputStream and OutputStream and not to embed stream pointers?
-//Because content can be compressed on the fly - so let it be implented in the Client class.
+//Because content can be compressed on the fly - so let it be implemented in the Client class.
 class HttpServerContext:public InputStream,public OutputStream
 {
 private:
@@ -147,7 +147,7 @@ protected:
 	void ParseParameters(const string& st);
 	HttpServerContext(Server* s);
 public:
-	Server* server; //Server isntance, to which this request happened.
+	Server* server; //Server instance, to which this request happened.
 	IHttpHandler* errorHandler; //Error handler.
 	IFileUploadHandler* fileHandler; //File upload handler.
 	HttpRequestHeader requestHeader; //See related class.
@@ -160,10 +160,10 @@ public:
 	//Call this when you need to process post data.
 	//Called automatically by dispatchers for Post resources.
 	void ProcessPostData();
-	//Parse specifed number of uri sections (/*/) as parameters. num=0 means all.
+	//Parse specified number of uri sections (/*/) as parameters. num=0 means all.
 	//These parameters will have names "uri#", where # starts from 0.
 	void ParseURIAsParameters(int num=0);
-	//Parse specifed number of host sections (.*.) as parameters. num=0 means all.
+	//Parse specified number of host sections (.*.) as parameters. num=0 means all.
 	//These parameters will have names "host#", where # starts from 0.
 	void ParseHostAsParameters(int num=0);
 	//Redirect (See Other)
