@@ -6,33 +6,40 @@
 	See License.txt for licensing information.
 */
 
+#pragma once
 #ifndef _HTTPHELPERS_H
 #define	_HTTPHELPERS_H
 
 #include "Http.h"
 
+#include <string>
+#include <map>
+
+namespace WebToolkit
+{
+
 struct Mapping
 {
 	HttpMethod allowedMethod;
-	IHttpHandler* handler;
+	HttpHandler* handler;
 	bool handlerAutoDelete;
-	IHttpHandler* errorHandler;
+	HttpHandler* errorHandler;
 	bool errorHandlerAutoDelete;
-	IFileUploadHandler* fileHandler;
+	FileUploadHandler* fileHandler;
 	bool fileHandlerAutoDelete;
 };
 
-class Dispatcher:public IHttpHandler
+class Dispatcher:public HttpHandler
 {
 protected:
-	map<string,Mapping> dispatchMap;
-	string defaultHandler;
+	std::map<std::string,Mapping> dispatchMap;
+	std::string defaultHandler;
 public:
 	Dispatcher();
 	~Dispatcher();
-	void AddMapping(const string& st,HttpMethod allowedMethod,IHttpHandler* handler,bool handlerAutoDelete=false,IHttpHandler* errorHandler=NULL,bool errorHandlerAutoDelete=false,IFileUploadHandler* fileHandler=NULL,bool fileHandlerAutoDelete=false);
-	void SetDefaultHandler(string defaultHandler);
-	void Invoke(const string& what,HttpServerContext* context);
+	void AddMapping(const std::string& st,HttpMethod allowedMethod,HttpHandler* handler,bool handlerAutoDelete=false,HttpHandler* errorHandler=NULL,bool errorHandlerAutoDelete=false,FileUploadHandler* fileHandler=NULL,bool fileHandlerAutoDelete=false);
+	void SetDefaultHandler(std::string defaultHandler);
+	void Invoke(const std::string& what,HttpServerContext* context);
 	virtual void Handle(HttpServerContext* context)=0;
 };
 
@@ -48,17 +55,17 @@ public:
 	void Handle(HttpServerContext* context);
 };
 
-class Redirector:public IHttpHandler
+class Redirector:public HttpHandler
 {
 protected:
-	string redirectURI;
+	std::string redirectURI;
 public:
-	Redirector(const string& uri);
+	Redirector(const std::string& uri);
 	void Handle(HttpServerContext* context);
 };
 
 template<class T>
-class HttpHandlerConnector:public IHttpHandler
+class HttpHandlerConnector:public HttpHandler
 {
 public:
 	typedef void (T::*HandlerFunction)(HttpServerContext* context);
@@ -74,20 +81,22 @@ public:
 };
 
 template<class T>
-class HttpFileHandlerConnector:public IFileUploadHandler
+class HttpFileHandlerConnector:public FileUploadHandler
 {
 public:
-	typedef void (T::*HandlerFunction)(HttpServerContext* context,const string& filename,InputStream* stream);
+	typedef void (T::*HandlerFunction)(HttpServerContext* context,const std::string& filename,CoreToolkit::InputStream* stream);
 	T* obj;
 	HandlerFunction fn;
 	HttpFileHandlerConnector(T* o,HandlerFunction f):obj(o),fn(f)
 	{
 	}
-	void HandleFileUpload(HttpServerContext* context,const string& filename,InputStream* stream)
+	void HandleFileUpload(HttpServerContext* context,const std::string& filename,CoreToolkit::InputStream* stream)
 	{
 		(obj->*fn)(context,filename,stream);
 	}
 };
+
+}
 
 #endif
 

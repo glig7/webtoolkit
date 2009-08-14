@@ -6,29 +6,34 @@
 	See License.txt for licensing information.
 */
 
+#pragma once
 #ifndef _MAIN_H
 #define	_MAIN_H
 
+#include <Thread.h>
 #include <WebToolkit.h>
+
+#include <string>
+#include <vector>
 
 struct BlogEntry
 {
-	string author;
-	string text;
+	std::string author;
+	std::string text;
 };
 
 class SimpleBlog
 {
 private:
-	Server server;
-	URIDispatcher dispatcher;
-	Mutex entriesMutex;
-	vector<BlogEntry> entries;
+	WebToolkit::Server server;
+	WebToolkit::URIDispatcher dispatcher;
+	CoreToolkit::Mutex entriesMutex;
+	std::vector<BlogEntry> entries;
 public:
 	SimpleBlog();
 	void Run();
-	void Index(HttpServerContext* context);
-	void Post(HttpServerContext* context);
+	void Index(WebToolkit::HttpServerContext* context);
+	void Post(WebToolkit::HttpServerContext* context);
 };
 
 #endif

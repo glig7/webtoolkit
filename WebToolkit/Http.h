@@ -6,10 +6,19 @@
 	See License.txt for licensing information.
 */
 
+#pragma once
 #ifndef _HTTP_H
 #define	_HTTP_H
 
 #include "Stream.h"
+
+#include <string>
+#include <stdexcept>
+#include <map>
+#include <sstream>
+
+namespace WebToolkit
+{
 
 enum HttpMethod
 {
@@ -41,11 +50,11 @@ public:
 	static const char* serverString;
 };
 
-class HttpException:public runtime_error
+class HttpException:public std::runtime_error
 {
 public:
 	HttpResult result;
-	HttpException(HttpResult code,const string& st):result(code),runtime_error(st)
+	HttpException(HttpResult code,const std::string& st):result(code),std::runtime_error(st)
 	{
 	}
 };
@@ -63,71 +72,71 @@ public:
 class HttpRequestHeader
 {
 private:
-	void ParseCookies(const string& st);
-	void ParseHeaderItem(const string& name,const string& value);
+	void ParseCookies(const std::string& st);
+	void ParseHeaderItem(const std::string& name,const std::string& value);
 public:
 	HttpMethod method; //HTTP method. Only GET or POST are supported, as the only usable ones. See HttpMethod enum. GET is the default one.
-	string host; //Host header value.
-	string resource; //Requested resource.
+	std::string host; //Host header value.
+	std::string resource; //Requested resource.
 	time_t modifyTime; //If-Modified-Since header value. HttpNotModified should be sent in the response if content has not been modified since that time. Should be 0 if not used.
-	string userAgent; //User-Agent header value.
-	i64 rangeFrom,rangeTo; //Content range. Should be -1 if not used.
-	map<string,string> cookies; //Cookies as name-value pairs.
-	string contentType; //The mime type of the content.
+	std::string userAgent; //User-Agent header value.
+	long long rangeFrom,rangeTo; //Content range. Should be -1 if not used.
+	std::map<std::string,std::string> cookies; //Cookies as name-value pairs.
+	std::string contentType; //The mime type of the content.
 	int contentLength; //Content-Length header value. Should be 0 if not used.
-	map<string,string> customHeaders; //Allows to set some custom header.
+	std::map<std::string,std::string> customHeaders; //Allows to set some custom header.
 	bool keepConnection; //Is this connection persistent
 	//
 	HttpRequestHeader();
-	void ParseLine(const string& line);
-	string BuildHeader();
+	void ParseLine(const std::string& line);
+	std::string BuildHeader();
 };
 
 struct ResponseCookie
 {
-	string value;
+	std::string value;
 	time_t expireTime;
 };
 
 class HttpResponseHeader
 {
 private:
-	void ParseCookies(const string& st);
-	void ParseHeaderItem(const string& name,const string& value);
+	void ParseCookies(const std::string& st);
+	void ParseHeaderItem(const std::string& name,const std::string& value);
 public:
 	HttpResult result; //Http result. See HttpResult enum.
-	string server; //Server header value.
-	string contentType; //The mime type of the content.
-	string location; //Redirect location.
-	i64 contentLength; //Content-Length header value.
-	i64 rangeFrom,rangeTo,rangeTotal; //Content range. Used with HttpPartialContent result. Should be -1 if not used.
+	std::string server; //Server header value.
+	std::string contentType; //The mime type of the content.
+	std::string location; //Redirect location.
+	long long contentLength; //Content-Length header value.
+	long long rangeFrom,rangeTo,rangeTotal; //Content range. Used with HttpPartialContent result. Should be -1 if not used.
 	time_t modifyTime; //Last-Modified header value. Should be 0 if not used.
 	time_t expireTime; //Expires header value. Can be used to avoid subsequent requests to static content. Should be 0 if not used.
-	map<string,ResponseCookie> cookies; //Cookies as name-value pairs. Cookie's expiration time is additionally stored.
-	map<string,string> customHeaders; //Allows to set some custom header, e.g. X-Accel-Redirect for nginx.
+	std::map<std::string,ResponseCookie> cookies; //Cookies as name-value pairs. Cookie's expiration time is additionally stored.
+	std::map<std::string,std::string> customHeaders; //Allows to set some custom header, e.g. X-Accel-Redirect for nginx.
 	//
 	HttpResponseHeader();
-	void ParseLine(const string& line);
-	string BuildHeader();
+	void ParseLine(const std::string& line);
+	std::string BuildHeader();
 };
 
 class HttpServerContext;
 
 //You should implement this interface if you want to accept files.
-class IFileUploadHandler
+class FileUploadHandler
 {
 public:
-	virtual void HandleFileUpload(HttpServerContext* context,const string& filename,InputStream* stream)=0;
-	virtual ~IFileUploadHandler(); //To allow automatic destruction
+	virtual void HandleFileUpload(HttpServerContext* context,const std::string& filename,CoreToolkit::InputStream* stream)=0;
+	virtual ~FileUploadHandler(); //To allow automatic destruction
 };
 
 //You should implement this interface for handling http requests, errors, etc.
 //This is the interface for any classes that are working with http context.
-class IHttpHandler
+class HttpHandler
 {
 public:
 	virtual void Handle(HttpServerContext* context)=0;
-	virtual ~IHttpHandler(); //To allow automatic destruction
+	virtual ~HttpHandler(); //To allow automatic destruction
 };
 
 class Server; //Trying not to take additional header dependencies.
@@ -138,25 +147,25 @@ class Server; //Trying not to take additional header dependencies.
 //
 //Why extend InputStream and OutputStream and not to embed stream pointers?
 //Because content can be compressed on the fly - so let it be implemented in the Client class.
-class HttpServerContext:public InputStream,public OutputStream
+class HttpServerContext:public CoreToolkit::InputStream,public CoreToolkit::OutputStream
 {
 private:
 	int nextUriNum; //Next number to assign for uri parameter.
 	int nextHostNum; //Next number to assign for host parameter.
 protected:
-	void ParseParameters(const string& st);
+	void ParseParameters(const std::string& st);
 	HttpServerContext(Server* s);
 public:
 	Server* server; //Server instance, to which this request happened.
-	IHttpHandler* errorHandler; //Error handler.
-	IFileUploadHandler* fileHandler; //File upload handler.
+	HttpHandler* errorHandler; //Error handler.
+	FileUploadHandler* fileHandler; //File upload handler.
 	HttpRequestHeader requestHeader; //See related class.
 	HttpResponseHeader responseHeader; //See related class.
 	bool headerSent; //Response header already sent
-	string clientIP; //Remote peer IP address. Can be used for identifying client by IP address.
-	map<string,string> parameters; //Parameters as name-value pairs.
+	std::string clientIP; //Remote peer IP address. Can be used for identifying client by IP address.
+	std::map<std::string,std::string> parameters; //Parameters as name-value pairs.
 	HttpSessionObject* sessionObject; //Associated session object, if present.
-	ostringstream responseBody; //Generated output goes here.
+	std::ostringstream responseBody; //Generated output goes here.
 	//Call this when you need to process post data.
 	//Called automatically by dispatchers for Post resources.
 	void ProcessPostData();
@@ -167,9 +176,9 @@ public:
 	//These parameters will have names "host#", where # starts from 0.
 	void ParseHostAsParameters(int num=0);
 	//Redirect (See Other)
-	void Redirect(const string& location);
+	void Redirect(const std::string& location);
 	//Redirect (Moved Permanently)
-	void RedirectPermanent(const string& location);
+	void RedirectPermanent(const std::string& location);
 	//Send headers
 	void SendResponseHeader();
 	//Send response (headers and body)
@@ -177,8 +186,10 @@ public:
 	//Save object in the session.
 	void StartSession(HttpSessionObject* sessionObject);
 	//Serve file. Set download=true to force downloading (do not open in browser).
-	void ServeFile(const string& fileName,bool download=false);
+	void ServeFile(const std::string& fileName,bool download=false);
 };
+
+}
 
 #endif
 

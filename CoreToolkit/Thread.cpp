@@ -6,12 +6,18 @@
 	See License.txt for licensing information.
 */
 
-#include "Common.h"
 #include "Thread.h"
+
+#include <time.h>
 
 #ifndef WIN32
 #include <signal.h>
 #endif
+
+using namespace std;
+
+namespace CoreToolkit
+{
 
 struct Randomize
 {
@@ -153,3 +159,4 @@ void CondVar::Signal()
 #endif
 }
 
+}

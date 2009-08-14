@@ -8,6 +8,13 @@
 
 #include "Main.h"
 
+#include <iomanip>
+#include <time.h>
+
+using namespace std;
+using namespace CoreToolkit;
+using namespace WebToolkit;
+
 FileServerConfig::FileServerConfig():ip("0.0.0.0"),port(8080),numWorkers(16),rootDir("."),htmlTemplate("list.html")
 {
 	File in("FileServer.conf",false);
@@ -227,4 +234,3 @@ int main()
 		LOG(LogError)<<e.what();
 	}
 }
-

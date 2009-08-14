@@ -5,11 +5,21 @@
 	(c) 2009 Alexander "Mad Fish" Chehovsky
 	See License.txt for licensing information.
 */
+#ifdef _MSC_VER
+#define _CRT_SECURE_NO_WARNINGS
+#endif
 
-#include "Common.h"
 #include "Util.h"
 
-string Util::HTMLEscape(const string& st)
+#include <sstream>
+#include <time.h>
+
+using namespace std;
+
+namespace CoreToolkit
+{
+
+std::string Util::HTMLEscape(const std::string& st)
 {
 	ostringstream r;
 	for(size_t i=0;i<st.length();i++)
@@ -40,7 +50,7 @@ unsigned char hex_conv(char t)
 		return static_cast<unsigned char>(t)-'A'+0xa;
 }
 
-string Util::StringToLower(const string& st)
+std::string Util::StringToLower(const std::string& st)
 {
 	ostringstream r;
 	for(size_t i=0;i<st.length();i++)
@@ -48,7 +58,7 @@ string Util::StringToLower(const string& st)
 	return r.str();
 }
 
-string Util::URLDecode(const string& st)
+std::string Util::URLDecode(const std::string& st)
 {
 	ostringstream r;
 	const char* ptr=st.c_str();
@@ -73,7 +83,7 @@ string Util::URLDecode(const string& st)
 	return r.str();
 }
 
-string Util::URLEncode(const string& st)
+std::string Util::URLEncode(const std::string& st)
 {
 	static const char lookup_table[]="0123456789ABCDEF";
 	ostringstream r;
@@ -91,7 +101,7 @@ string Util::URLEncode(const string& st)
 	return r.str();
 }
 
-vector<string> Util::Extract(const string& st)
+std::vector<string> Util::Extract(const std::string& st)
 {
 	vector<string> r;
 	unsigned int curPos,valBegin,valEnd;
@@ -131,7 +141,7 @@ vector<string> Util::Extract(const string& st)
 	return r;
 }
 
-void Util::Substitute(string& st,const string& what,const string& to)
+void Util::Substitute(std::string& st,const std::string& what,const std::string& to)
 {
 	size_t i=st.find(what);
 	if(i!=string::npos)
@@ -140,7 +150,7 @@ void Util::Substitute(string& st,const string& what,const string& to)
 
 const char* months[]={"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"};
 
-string Util::MakeHTTPTime(time_t t)
+std::string Util::MakeHTTPTime(time_t t)
 {
 	ostringstream r;
 	tm* tms=gmtime(&t);
@@ -161,7 +171,7 @@ string Util::MakeHTTPTime(time_t t)
 	return r.str();
 }
 
-time_t Util::ParseHTTPTime(const string& httpTime)
+time_t Util::ParseHTTPTime(const std::string& httpTime)
 {
 	if(httpTime.length()<2)
 		return 0;
@@ -192,7 +202,7 @@ time_t Util::ParseHTTPTime(const string& httpTime)
 	return mktime(&tms);
 }
 
-string Util::Timestamp(time_t t)
+std::string Util::Timestamp(time_t t)
 {
 	ostringstream r;
 	tm* tms=localtime(&t);
@@ -216,7 +226,7 @@ string Util::Timestamp(time_t t)
 	return r.str();
 }
 
-string Util::UTF8Encode(const wstring& st)
+std::string Util::UTF8Encode(const std::wstring& st)
 {
 	ostringstream r;
 	for(size_t i=0;i<st.length();i++)
@@ -235,7 +245,7 @@ string Util::UTF8Encode(const wstring& st)
 	return r.str();
 }
 
-wstring Util::UTF8Decode(const string& st)
+std::wstring Util::UTF8Decode(const std::string& st)
 {
 	wstring r;
 	size_t i;
@@ -270,7 +280,7 @@ wstring Util::UTF8Decode(const string& st)
 	return r;
 }
 
-void Util::Trim(string& st)
+void Util::Trim(std::string& st)
 {
 	while((!st.empty())&&((st[0]==' ')||(st[0]=='\t')||(st[0]=='\n')||(st[0]=='\r')))
 		st.erase(0,1);
@@ -278,7 +288,7 @@ void Util::Trim(string& st)
 		st.erase(st.size()-1,1);
 }
 
-string Util::GenerateRandomString(int len)
+std::string Util::GenerateRandomString(int len)
 {
 	string r;
 	for(int i=0;i<len;i++)
@@ -286,7 +296,7 @@ string Util::GenerateRandomString(int len)
 	return r;
 }
 
-string Util::MimeType(const string& ext)
+std::string Util::MimeType(const std::string& ext)
 {
 	string r;
 	if(ext=="txt"||ext=="cpp"||ext=="h")
@@ -308,3 +318,4 @@ string Util::MimeType(const string& ext)
 	return r;
 }
 
+}

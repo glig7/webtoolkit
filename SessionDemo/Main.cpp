@@ -8,6 +8,10 @@
 
 #include "Main.h"
 
+using namespace std;
+using namespace CoreToolkit;
+using namespace WebToolkit;
+
 SessionObject::SessionObject():counter(0)
 {
 }
@@ -52,4 +56,3 @@ int main()
 		LOG(LogError)<<e.what();
 	}
 }
-

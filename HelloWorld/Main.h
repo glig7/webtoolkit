@@ -6,19 +6,20 @@
 	See License.txt for licensing information.
 */
 
+#pragma once
 #ifndef _MAIN_H
 #define	_MAIN_H
 
 #include <WebToolkit.h>
 
-class HelloWorld:public IHttpHandler
+class HelloWorld:public WebToolkit::HttpHandler
 {
 private:
-	Server server;
+	WebToolkit::Server server;
 public:
 	HelloWorld();
 	void Run();
-	void Handle(HttpServerContext* context);
+	void Handle(WebToolkit::HttpServerContext* context);
 };
 
 #endif

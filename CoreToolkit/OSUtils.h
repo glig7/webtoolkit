@@ -6,8 +6,12 @@
 	See License.txt for licensing information.
 */
 
+#pragma once
 #ifndef _OSUTILS_H
 #define	_OSUTILS_H
+
+namespace CoreToolkit
+{
 
 class Environment
 {
@@ -17,6 +21,8 @@ public:
 	static bool CheckForTermination();
 	static void WaitForTermination();
 };
+
+}
 
 #endif
 

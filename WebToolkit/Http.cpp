@@ -6,10 +6,21 @@
 	See License.txt for licensing information.
 */
 
-#include "Common.h"
 #include "Http.h"
 #include "Util.h"
 #include "Server.h"
+
+#include <time.h>
+
+#ifdef WIN32
+#define atoll _atoi64
+#endif
+
+using namespace std;
+using namespace CoreToolkit;
+
+namespace WebToolkit
+{
 
 const char* const Http::methodStrings[]={
 	"GET",
@@ -53,7 +64,7 @@ HttpRequestHeader::HttpRequestHeader():method(HttpGet),modifyTime(0),rangeFrom(-
 {
 }
 
-void HttpRequestHeader::ParseHeaderItem(const string& name,const string& value)
+void HttpRequestHeader::ParseHeaderItem(const std::string& name,const std::string& value)
 {
 	//Some additional verifications applied to ensure nothing wrong happens later.
 	if(name=="Host")
@@ -116,7 +127,7 @@ void HttpRequestHeader::ParseHeaderItem(const string& name,const string& value)
 	customHeaders[name]=value;
 }
 
-void HttpRequestHeader::ParseLine(const string& line)
+void HttpRequestHeader::ParseLine(const std::string& line)
 {
 	size_t colonPos=line.find(':');
 	if(colonPos==string::npos)
@@ -145,7 +156,7 @@ void HttpRequestHeader::ParseLine(const string& line)
 	}
 }
 
-string HttpRequestHeader::BuildHeader()
+std::string HttpRequestHeader::BuildHeader()
 {
 	ostringstream r;
 	r<<Http::methodStrings[method]<<" "<<resource<<" "<<"HTTP/1.1"<<endl;
@@ -182,7 +193,7 @@ string HttpRequestHeader::BuildHeader()
 	return r.str();
 }
 
-void HttpRequestHeader::ParseCookies(const string& st)
+void HttpRequestHeader::ParseCookies(const std::string& st)
 {
 	string t=st;
 	string p,l,r;
@@ -216,7 +227,7 @@ HttpResponseHeader::HttpResponseHeader():result(HttpOK),contentLength(0),rangeFr
 {
 }
 
-void HttpResponseHeader::ParseHeaderItem(const string& name,const string& value)
+void HttpResponseHeader::ParseHeaderItem(const std::string& name,const std::string& value)
 {
 	//Some additional verifications applied to ensure nothing wrong happens later.
 	if(name=="Server")
@@ -273,7 +284,7 @@ void HttpResponseHeader::ParseHeaderItem(const string& name,const string& value)
 	customHeaders[name]=value;
 }
 
-void HttpResponseHeader::ParseLine(const string& line)
+void HttpResponseHeader::ParseLine(const std::string& line)
 {
 	size_t colonPos=line.find(':');
 	if(colonPos==string::npos)
@@ -299,7 +310,7 @@ void HttpResponseHeader::ParseLine(const string& line)
 	}
 }
 
-string HttpResponseHeader::BuildHeader()
+std::string HttpResponseHeader::BuildHeader()
 {
 	ostringstream r;
 	r<<"HTTP/1.1 "<<Http::resultStrings[result]<<endl;
@@ -339,7 +350,7 @@ string HttpResponseHeader::BuildHeader()
 	return r.str();
 }
 
-void HttpResponseHeader::ParseCookies(const string& st)
+void HttpResponseHeader::ParseCookies(const std::string& st)
 {
 	size_t eqpos=st.find("name=");
 	eqpos+=4;
@@ -368,10 +379,10 @@ private:
 	string helperBuffer;
 	string delimiter;
 	HttpServerContext* context;
-	IFileUploadHandler* handler;
+	FileUploadHandler* handler;
 	bool Gather();
 public:
-	MultipartHelper(InputStream* source,const string& d,HttpServerContext* c,IFileUploadHandler* h):Filter(source),delimiter(d),context(c),handler(h)
+	MultipartHelper(InputStream* source,const string& d,HttpServerContext* c,FileUploadHandler* h):Filter(source),delimiter(d),context(c),handler(h)
 	{
 	}
 	int ReadSomeUnbuffered(void* buf,int len);
@@ -594,7 +605,7 @@ void HttpServerContext::ParseHostAsParameters(int num)
 	}
 }
 
-void HttpServerContext::ParseParameters(const string& st)
+void HttpServerContext::ParseParameters(const std::string& st)
 {
 	string t=st;
 	string p,l,r;
@@ -621,14 +632,14 @@ void HttpServerContext::ParseParameters(const string& st)
 	}
 }
 
-void HttpServerContext::Redirect(const string& location)
+void HttpServerContext::Redirect(const std::string& location)
 {
 	responseHeader.result=HttpSeeOther;
 	responseHeader.location=location;
 	responseBody<<"<html><body><a href=\""<<location<<"\">"<<location<<"</a></body></html>";
 }
 
-void HttpServerContext::RedirectPermanent(const string& location)
+void HttpServerContext::RedirectPermanent(const std::string& location)
 {
 	responseHeader.result=HttpMovedPermanently;
 	responseHeader.location=location;
@@ -657,7 +668,7 @@ void HttpServerContext::StartSession(HttpSessionObject* sessionObject)
 	server->StartSession(sessionObject,this);
 }
 
-void HttpServerContext::ServeFile(const string& fileName,bool download)
+void HttpServerContext::ServeFile(const std::string& fileName,bool download)
 {
 	server->ServeFile(fileName,this,download);
 }
@@ -666,10 +677,12 @@ HttpSessionObject::~HttpSessionObject()
 {
 }
 
-IFileUploadHandler::~IFileUploadHandler()
+FileUploadHandler::~FileUploadHandler()
 {
 }
 
-IHttpHandler::~IHttpHandler()
+HttpHandler::~HttpHandler()
 {
+}
+
 }

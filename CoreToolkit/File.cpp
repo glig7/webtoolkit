@@ -6,12 +6,16 @@
 	See License.txt for licensing information.
 */
 
-#include "Common.h"
 #include "File.h"
 #include "Util.h"
 #include "FileUtils.h"
 
-File::File(const string& fileName,bool write):f(NULL)
+using namespace std;
+
+namespace CoreToolkit
+{
+
+File::File(const std::string& fileName,bool write):f(NULL)
 {
 #ifdef WIN32
 	DWORD dwDesiredAccess=write?GENERIC_WRITE:GENERIC_READ;
@@ -63,7 +67,7 @@ int File::WriteSome(const void* buf,int len)
 	return len;
 }
 
-void File::Seek(i64 offset)
+void File::Seek(long long offset)
 {
 #ifdef WIN32
 	LARGE_INTEGER o;
@@ -76,3 +80,4 @@ void File::Seek(i64 offset)
 	buffer.clear();
 }
 
+}

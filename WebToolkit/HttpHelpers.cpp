@@ -6,9 +6,14 @@
 	See License.txt for licensing information.
 */
 
-#include "Common.h"
 #include "HttpHelpers.h"
 #include "Server.h"
+
+using namespace std;
+using namespace CoreToolkit;
+
+namespace WebToolkit
+{
 
 Dispatcher::Dispatcher()
 {
@@ -27,7 +32,7 @@ Dispatcher::~Dispatcher()
 	}
 }
 
-void Dispatcher::AddMapping(const string& st,HttpMethod allowedMethod,IHttpHandler* handler,bool handlerAutoDelete,IHttpHandler* errorHandler,bool errorHandlerAutoDelete,IFileUploadHandler* fileHandler,bool fileHandlerAutoDelete)
+void Dispatcher::AddMapping(const std::string& st,HttpMethod allowedMethod,HttpHandler* handler,bool handlerAutoDelete,HttpHandler* errorHandler,bool errorHandlerAutoDelete,FileUploadHandler* fileHandler,bool fileHandlerAutoDelete)
 {
 	dispatchMap[st].allowedMethod=allowedMethod;
 	dispatchMap[st].handler=handler;
@@ -38,12 +43,12 @@ void Dispatcher::AddMapping(const string& st,HttpMethod allowedMethod,IHttpHandl
 	dispatchMap[st].fileHandlerAutoDelete=fileHandlerAutoDelete;
 }
 
-void Dispatcher::SetDefaultHandler(string defaultHandler)
+void Dispatcher::SetDefaultHandler(std::string defaultHandler)
 {
 	this->defaultHandler=defaultHandler;
 }
 
-void Dispatcher::Invoke(const string& what,HttpServerContext* context)
+void Dispatcher::Invoke(const std::string& what,HttpServerContext* context)
 {
 	if(dispatchMap.find(what)==dispatchMap.end())
 		throw logic_error("Incorrect default handler");
@@ -95,7 +100,7 @@ void URIDispatcher::Handle(HttpServerContext* context)
 		throw HttpException(HttpNotFound,"Not found.");
 }
 
-Redirector::Redirector(const string& uri):redirectURI(uri)
+Redirector::Redirector(const std::string& uri):redirectURI(uri)
 {
 }
 
@@ -107,3 +112,4 @@ void Redirector::Handle(HttpServerContext* context)
 		throw HttpException(HttpNotFound,"Not found.");
 }
 
+}

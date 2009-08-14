@@ -6,22 +6,28 @@
 	See License.txt for licensing information.
 */
 
-#include "Common.h"
 #include "OSUtils.h"
 #include "Thread.h"
+
+#ifdef WIN32
+#include <windows.h>
+#else
+#include <signal.h>
+#endif
+
+using namespace std;
+
+namespace CoreToolkit
+{
 
 bool Environment::terminated=false;
 
 #ifdef WIN32
-#include <windows.h>
-
 BOOL WINAPI HandlerRoutine(DWORD dwCtrlType)
 {
 	Environment::terminated=true;
 	return TRUE;
 }
-#else
-#include <signal.h>
 #endif
 
 void Environment::Init()
@@ -72,3 +78,4 @@ struct EnvironmentInit
 	}
 } environmentInit;
 
+}

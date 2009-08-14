@@ -8,6 +8,10 @@
 
 #include "Main.h"
 
+using namespace std;
+using namespace CoreToolkit;
+using namespace WebToolkit;
+
 HelloWorld::HelloWorld():server()
 {
 	server.RegisterHandler(this);
@@ -36,4 +40,3 @@ int main()
 		LOG(LogError)<<e.what();
 	}
 }
-

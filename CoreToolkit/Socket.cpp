@@ -6,14 +6,27 @@
 	See License.txt for licensing information.
 */
 
-#include "Common.h"
 #include "Socket.h"
 
 #include <memory.h>
 
 #ifdef WIN32
 #include <Ws2tcpip.h>
+#else
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <errno.h>
+#include <signal.h>
+#endif
 
+using namespace std;
+
+namespace CoreToolkit
+{
+
+#ifdef WIN32
 struct WSInit
 {
 public:
@@ -29,13 +42,6 @@ public:
 		WSACleanup();
 	}
 } wsinit;
-#else
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <errno.h>
-#include <signal.h>
 #endif
 
 BaseSocket::BaseSocket():sock(-1)
@@ -99,7 +105,7 @@ int Socket::WriteSome(const void* buf,int len)
 	return bw;
 }
 
-Listener::Listener(int portNumber,const string& ip)
+Listener::Listener(int portNumber,const std::string& ip)
 {
 	sock=socket(PF_INET,SOCK_STREAM,IPPROTO_TCP);
 	if(sock<0)
@@ -134,3 +140,4 @@ Socket* Listener::Accept()
 	return s;
 }
 
+}

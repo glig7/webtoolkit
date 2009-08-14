@@ -6,14 +6,20 @@
 	See License.txt for licensing information.
 */
 
+#pragma once
 #ifndef _THREAD_H
 #define	_THREAD_H
+
+#include <queue>
 
 #ifdef WIN32
 #include <windows.h>
 #else
 #include <pthread.h>
 #endif
+
+namespace CoreToolkit
+{
 
 typedef void (*ThreadProc)(void* arg);
 
@@ -97,6 +103,8 @@ public:
 		return e;
 	}
 };
+
+}
 
 #endif
 

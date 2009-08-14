@@ -6,17 +6,23 @@
 	See License.txt for licensing information.
 */
 
+#pragma once
 #ifndef _SOCKET_H
 #define	_SOCKET_H
 
 #include "Stream.h"
+
+#include <string>
+
+namespace CoreToolkit
+{
 
 class BaseSocket
 {
 protected:
 	int sock;
 public:
-	string remoteIP;
+	std::string remoteIP;
 	int remotePort;
 	BaseSocket();
 	BaseSocket(int socket);
@@ -38,10 +44,12 @@ public:
 class Listener:public BaseSocket
 {
 public:
-	Listener(int portNumber,const string& ip);
+	Listener(int portNumber,const std::string& ip);
 	~Listener();
 	Socket* Accept();
 };
+
+}
 
 #endif
 

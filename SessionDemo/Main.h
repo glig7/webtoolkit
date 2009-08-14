@@ -6,12 +6,13 @@
 	See License.txt for licensing information.
 */
 
+#pragma once
 #ifndef _MAIN_H
 #define	_MAIN_H
 
 #include <WebToolkit.h>
 
-class SessionObject:public HttpSessionObject
+class SessionObject:public WebToolkit::HttpSessionObject
 {
 public:
 	int counter;
@@ -19,14 +20,14 @@ public:
 	~SessionObject();
 };
 
-class SessionDemo:public IHttpHandler
+class SessionDemo:public WebToolkit::HttpHandler
 {
 private:
-	Server server;
+	WebToolkit::Server server;
 public:
 	SessionDemo();
 	void Run();
-	void Handle(HttpServerContext* context);
+	void Handle(WebToolkit::HttpServerContext* context);
 };
 
 #endif

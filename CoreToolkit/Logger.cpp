@@ -6,9 +6,15 @@
 	See License.txt for licensing information.
 */
 
-#include "Common.h"
 #include "Logger.h"
 #include "Util.h"
+
+#include <time.h>
+
+using namespace std;
+
+namespace CoreToolkit
+{
 
 Mutex Log::mutex;
 LogLevel Log::reportingLevel=LogDebug;
@@ -55,4 +61,6 @@ std::ostringstream& Log::Get(LogLevel level)
 void Log::SetLogHandler(ILogHandler* handler)
 {
 	logHandler=handler;
+}
+
 }

@@ -6,10 +6,11 @@
 	See License.txt for licensing information.
 */
 
-#include "Common.h"
 #include "FileUtils.h"
 #include "Util.h"
 #include "File.h"
+
+#include <sstream>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -19,6 +20,11 @@
 #else
 #include <dirent.h>
 #endif
+
+using namespace std;
+
+namespace CoreToolkit
+{
 
 class Buffer
 {
@@ -37,14 +43,14 @@ public:
 #ifdef WIN32
 time_t WindowsFileTimeToUnixTime(FILETIME* filetime)
 {
-	i64 i=(*(reinterpret_cast<i64*>(filetime)));
+	long long i=(*(reinterpret_cast<long long*>(filetime)));
 	i-=116444736000000000;
 	i/=10000000;
 	return static_cast<time_t>(i);
 }
 #endif
 
-vector<DirectoryEntry> FileUtils::DirectoryList(const string& path)
+vector<DirectoryEntry> FileUtils::DirectoryList(const std::string& path)
 {
 	string adjPath=AdjustPath(path);
 	vector<DirectoryEntry> r;
@@ -112,7 +118,7 @@ vector<DirectoryEntry> FileUtils::DirectoryList(const string& path)
 	return r;
 }
 
-string FileUtils::AdjustPath(const string& path)
+string FileUtils::AdjustPath(const std::string& path)
 {
 #ifdef WIN32
 	ostringstream r;
@@ -133,7 +139,7 @@ string FileUtils::AdjustPath(const string& path)
 #endif
 }
 
-CheckPathResult FileUtils::CheckPath(const string& st)
+CheckPathResult FileUtils::CheckPath(const std::string& st)
 {
 #ifdef WIN32
 	DWORD fileAttr=GetFileAttributesW(Util::UTF8Decode(AdjustPath(st)).c_str());
@@ -154,7 +160,7 @@ CheckPathResult FileUtils::CheckPath(const string& st)
 #endif
 }
 
-i64 FileUtils::GetFileSize(const string& st)
+long long FileUtils::GetFileSize(const std::string& st)
 {
 #ifdef WIN32
 	WIN32_FIND_DATAW findData;
@@ -174,7 +180,7 @@ i64 FileUtils::GetFileSize(const string& st)
 #endif
 }
 
-time_t FileUtils::GetFileModifyTime(const string& st)
+time_t FileUtils::GetFileModifyTime(const std::string& st)
 {
 #ifdef WIN32
 	WIN32_FIND_DATAW findData;
@@ -191,7 +197,7 @@ time_t FileUtils::GetFileModifyTime(const string& st)
 #endif
 }
 
-bool FileUtils::PathValid(const string& st)
+bool FileUtils::PathValid(const std::string& st)
 {
 	if(st.empty()||(st[0]!='/'))
 		return false;
@@ -206,9 +212,9 @@ bool FileUtils::PathValid(const string& st)
 	return true;
 }
 
-string FileUtils::ReadFile(const string& st)
+std::string FileUtils::ReadFile(const std::string& st)
 {
-	i64 size64=GetFileSize(st);
+	long long size64=GetFileSize(st);
 	if(size64==-1)
 		throw runtime_error("File not found");
 	if(size64>10*1024*1024)
@@ -221,3 +227,4 @@ string FileUtils::ReadFile(const string& st)
 	return r;
 }
 
+}

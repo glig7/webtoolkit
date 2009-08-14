@@ -6,7 +6,6 @@
 	See License.txt for licensing information.
 */
 
-#include "Common.h"
 #include "Server.h"
 #include "Util.h"
 #include "FileUtils.h"
@@ -14,7 +13,15 @@
 #include "Logger.h"
 #include "Client.h"
 
-Server::Server(int port,const string& ip,int numWorkers):listenerPort(port),listenerIP(ip),listener(port,ip),handler(NULL),defaultErrorHandler(NULL),terminated(false),workersCount(0),gcPeriod(100),gcMaxLifeTime(1800),gcCounter(0),listenerThreadRunning(false)
+#include <time.h>
+
+using namespace std;
+using namespace CoreToolkit;
+
+namespace WebToolkit
+{
+
+Server::Server(int port,const std::string& ip,int numWorkers):listenerPort(port),listenerIP(ip),listener(port,ip),handler(NULL),defaultErrorHandler(NULL),terminated(false),workersCount(0),gcPeriod(100),gcMaxLifeTime(1800),gcCounter(0),listenerThreadRunning(false)
 {
 	StartWorkers(numWorkers);
 }
@@ -93,12 +100,12 @@ void Server::Terminate()
 	terminated=false;
 }
 
-void Server::RegisterHandler(IHttpHandler* handler)
+void Server::RegisterHandler(HttpHandler* handler)
 {
 	this->handler=handler;
 }
 
-void Server::RegisterDefaultErrorHandler(IHttpHandler* handler)
+void Server::RegisterDefaultErrorHandler(HttpHandler* handler)
 {
 	this->defaultErrorHandler=handler;
 }
@@ -115,9 +122,9 @@ void Server::OnWorkerDetach()
 	workersCount--;
 }
 
-void Server::ServeFile(const string& fileName,HttpServerContext* context,bool download)
+void Server::ServeFile(const std::string& fileName,HttpServerContext* context,bool download)
 {
-	i64 size=FileUtils::GetFileSize(fileName);
+	long long size=FileUtils::GetFileSize(fileName);
 	if(size==-1)
 		throw HttpException(HttpNotFound,"Requested file not found.");
 	time_t modifyTime=FileUtils::GetFileModifyTime(fileName);
@@ -128,7 +135,7 @@ void Server::ServeFile(const string& fileName,HttpServerContext* context,bool do
 	}
 	context->responseHeader.modifyTime=modifyTime;
 	File in(fileName,false);
-	i64 contentLength;
+	long long contentLength;
 	if(context->requestHeader.rangeFrom==-1)
 	{
 		contentLength=size;
@@ -223,7 +230,7 @@ void Server::StartSession(HttpSessionObject* sessionObject,HttpServerContext* co
 	context->responseHeader.cookies["sessiontoken"].expireTime=0;
 }
 
-HttpSessionObject* Server::GetSessionObject(const string& token)
+HttpSessionObject* Server::GetSessionObject(const std::string& token)
 {
 	MutexLock lock(sessionsMutex);
 	if(sessions.find(token)==sessions.end())
@@ -234,3 +241,4 @@ HttpSessionObject* Server::GetSessionObject(const string& token)
 	return sessions[token].object;
 }
 
+}

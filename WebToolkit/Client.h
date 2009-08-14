@@ -6,22 +6,31 @@
 	See License.txt for licensing information.
 */
 
+#pragma once
 #ifndef _CLIENT_H
 #define	_CLIENT_H
 
-class Server;
+namespace CoreToolkit
+{
 class Socket;
+}
+namespace WebToolkit
+{
+
+class Server;
 
 class Client
 {
 private:
 	Server* server;
-	Socket* socket;
+	CoreToolkit::Socket* socket;
 public:
-	Client(Server* serv,Socket* sock);
+	Client(Server* serv,CoreToolkit::Socket* sock);
 	~Client();
 	void Run();
 };
+
+}
 
 #endif
 

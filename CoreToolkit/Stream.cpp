@@ -6,8 +6,12 @@
 	See License.txt for licensing information.
 */
 
-#include "Common.h"
 #include "Stream.h"
+
+using namespace std;
+
+namespace CoreToolkit
+{
 
 InputStream::InputStream():eof(false)
 {
@@ -81,7 +85,7 @@ bool InputStream::Wait(int timeout)
 	return WaitUnbuffered(timeout);
 }
 
-string InputStream::Read(int len)
+std::string InputStream::Read(int len)
 {
 	FillBuffer(len);
 	string st=buffer.substr(0,len);
@@ -113,7 +117,7 @@ bool InputStream::WaitForLine(int timeout)
 	return true;
 }
 
-string InputStream::ReadLine()
+std::string InputStream::ReadLine()
 {
 	int newline=buffer.find('\n');
 	int pos=buffer.length();
@@ -153,12 +157,12 @@ void OutputStream::Write(const void* buf,int len)
 	}
 }
 
-void OutputStream::Write(const string& st)
+void OutputStream::Write(const std::string& st)
 {
 	Write(st.c_str(),st.length());
 }
 
-void OutputStream::WriteLine(const string& st)
+void OutputStream::WriteLine(const std::string& st)
 {
 	Write(st);
 	Write("\n");
@@ -171,4 +175,6 @@ Filter::Filter(InputStream* source):sourceStream(source)
 bool Filter::Wait(int timeout)
 {
 	return sourceStream->Wait(timeout);
+}
+
 }

@@ -6,12 +6,17 @@
 	See License.txt for licensing information.
 */
 
-#include "Common.h"
 #include "Client.h"
 #include "Logger.h"
 #include "Http.h"
 #include "Server.h"
-#include "Socket.h"
+#include <Socket.h>
+
+using namespace std;
+using namespace CoreToolkit;
+
+namespace WebToolkit
+{
 
 class ClientRequest:public HttpServerContext
 {
@@ -125,3 +130,4 @@ void Client::Run()
 	LOG(LogDebug)<<socket->remoteIP<<" Connection closed.";
 }
 
+}
