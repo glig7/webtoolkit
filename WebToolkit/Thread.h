@@ -9,8 +9,6 @@
 #ifndef _THREAD_H
 #define	_THREAD_H
 
-#include <queue>
-
 #ifdef WIN32
 #include <windows.h>
 #else
