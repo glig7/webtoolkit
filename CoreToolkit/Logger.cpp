@@ -44,7 +44,10 @@ Log::~Log()
 	os<<endl;
 	MutexLock lock(mutex);
 	if(logHandler==NULL)
+	{
 		fputs(os.str().c_str(),stderr);
+		fflush(stderr);
+	}
 	else
 		logHandler->LogWrite(os.str());
 }

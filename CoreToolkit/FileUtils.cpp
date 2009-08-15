@@ -49,7 +49,7 @@ public:
 time_t WindowsFileTimeToUnixTime(FILETIME* filetime)
 {
 	long long i=(*(reinterpret_cast<long long*>(filetime)));
-	i-=116444736000000000;
+	i-=116444736000000000ll;
 	i/=10000000;
 	return static_cast<time_t>(i);
 }
