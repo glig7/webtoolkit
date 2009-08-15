@@ -6,6 +6,11 @@
 	See License.txt for licensing information.
 */
 
+/**
+	\file File.cpp
+	\brief Implementation of File class.
+*/
+
 #include "File.h"
 #include "Util.h"
 #include "FileUtils.h"

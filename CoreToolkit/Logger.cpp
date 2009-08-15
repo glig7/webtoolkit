@@ -6,6 +6,11 @@
 	See License.txt for licensing information.
 */
 
+/**
+	\file Logger.cpp
+	\brief Implementation of Logger class.
+*/
+
 #include "Logger.h"
 #include "Util.h"
 
@@ -19,7 +24,7 @@ namespace CoreToolkit
 
 Mutex Log::mutex;
 LogLevel Log::reportingLevel=LogDebug;
-ILogHandler* Log::logHandler=NULL;
+LogHandler* Log::logHandler=NULL;
 
 const char* const Log::names[]={
 	"",
@@ -59,7 +64,7 @@ std::ostringstream& Log::Get(LogLevel level)
     return os;
 }
 
-void Log::SetLogHandler(ILogHandler* handler)
+void Log::SetLogHandler(LogHandler* handler)
 {
 	logHandler=handler;
 }

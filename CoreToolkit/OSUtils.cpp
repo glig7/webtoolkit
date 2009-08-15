@@ -6,6 +6,11 @@
 	See License.txt for licensing information.
 */
 
+/**
+	\file OSUtils.cpp
+	\brief Implementation of functions for interaction with OS.
+*/
+
 #include "OSUtils.h"
 #include "Thread.h"
 
@@ -20,7 +25,9 @@ using namespace std;
 namespace CoreToolkit
 {
 
+#ifdef WIN32
 bool Environment::terminated=false;
+#endif
 
 #ifdef WIN32
 BOOL WINAPI HandlerRoutine(DWORD dwCtrlType)

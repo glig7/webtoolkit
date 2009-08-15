@@ -6,6 +6,11 @@
 	See License.txt for licensing information.
 */
 
+/**
+	\file FileUtils.cpp
+	\brief Implementation of various filesystem-related helper functions.
+*/
+
 #include "FileUtils.h"
 #include "Util.h"
 #include "File.h"
