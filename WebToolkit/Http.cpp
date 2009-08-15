@@ -6,6 +6,11 @@
 	See License.txt for licensing information.
 */
 
+/**
+	\file Http.cpp
+	\brief Implementation of Http-related classes.
+*/
+
 #include "Http.h"
 #include "Util.h"
 #include "Server.h"
