@@ -64,7 +64,8 @@ int File::ReadSomeUnbuffered(void* buf,int len)
 int File::WriteSome(const void* buf,int len)
 {
 #ifdef WIN32
-	if(WriteFile(f,buf,len,NULL,NULL)==0)
+	DWORD bw;
+	if(WriteFile(f,buf,len,&bw,NULL)==0)
 #else
 	if(fwrite(buf,len,1,f)==0)
 #endif

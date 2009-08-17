@@ -12,7 +12,7 @@ using namespace std;
 using namespace CoreToolkit;
 using namespace WebToolkit;
 
-SimpleBlog::SimpleBlog():server(8080,"0.0.0.0")
+SimpleBlog::SimpleBlog():server()
 {
 	dispatcher.AddMapping("/index",HttpGet,new HttpHandlerConnector<SimpleBlog>(this,&SimpleBlog::Index),true);
 	dispatcher.AddMapping("/post",HttpPost,new HttpHandlerConnector<SimpleBlog>(this,&SimpleBlog::Post),true);

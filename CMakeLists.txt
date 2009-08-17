@@ -8,5 +8,6 @@ add_subdirectory(HelloWorld)
 add_subdirectory(SimpleBlog)
 add_subdirectory(SessionDemo)
 add_subdirectory(FileServer)
+add_subdirectory(ImageBoard)
 #Docs:
 add_subdirectory(Docs)

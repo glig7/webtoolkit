@@ -192,7 +192,7 @@ class HttpServerContext;
 class FileUploadHandler
 {
 public:
-	virtual void HandleFileUpload(HttpServerContext* context,const std::string& filename,CoreToolkit::InputStream* stream)=0;
+	virtual void HandleFileUpload(HttpServerContext* context,const std::string& name,const std::string& filename,CoreToolkit::InputStream* stream)=0;
 	virtual ~FileUploadHandler(); //!< To allow automatic destruction
 };
 

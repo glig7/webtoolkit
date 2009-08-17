@@ -84,15 +84,15 @@ template<class T>
 class HttpFileHandlerConnector:public FileUploadHandler
 {
 public:
-	typedef void (T::*HandlerFunction)(HttpServerContext* context,const std::string& filename,CoreToolkit::InputStream* stream);
+	typedef void (T::*HandlerFunction)(HttpServerContext* context,const std::string& name,const std::string& filename,CoreToolkit::InputStream* stream);
 	T* obj;
 	HandlerFunction fn;
 	HttpFileHandlerConnector(T* o,HandlerFunction f):obj(o),fn(f)
 	{
 	}
-	void HandleFileUpload(HttpServerContext* context,const std::string& filename,CoreToolkit::InputStream* stream)
+	void HandleFileUpload(HttpServerContext* context,const std::string& name,const std::string& filename,CoreToolkit::InputStream* stream)
 	{
-		(obj->*fn)(context,filename,stream);
+		(obj->*fn)(context,name,filename,stream);
 	}
 };
 

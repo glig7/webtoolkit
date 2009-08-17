@@ -416,13 +416,6 @@ int MultipartHelper::ReadSomeUnbuffered(void* buf,int len)
 		eof=true;
 		return 0;
 	}
-	if(sourceStream->Eof())
-	{
-		int l=min<int>(helperBuffer.length(),len);
-		memcpy(buf,helperBuffer.c_str(),l);
-		helperBuffer.erase(0,l);
-		return l;
-	}
 	size_t dpos=helperBuffer.find(delimiter);
 	if(dpos==string::npos)
 	{
@@ -467,7 +460,6 @@ void MultipartHelper::Process()
 	else
 		lineEnding=helperBuffer.substr(0,2);
 	delimiter=lineEnding+"--"+delimiter;
-	helperBuffer.erase(lineEnding.length());
 	//Now delimiter string is ready for actual usage
 	for(;;)
 	{
@@ -483,12 +475,12 @@ void MultipartHelper::Process()
 		//--delimiter
 		//data
 		//--delimiter--      <-finish
-		if(helperBuffer[0]='-')
+		if(helperBuffer[0]=='-')
 			return;
 		//From now on, we use our own InputStream implementation to read
 		//until next delimiter.
 		//Reset it's state and skip to next line.
-		eof=0;
+		eof=false;
 		ReadLine();
 		//Well, now we're at the data headers.
 		string name;
@@ -521,7 +513,7 @@ void MultipartHelper::Process()
 		if(!filename.empty())
 		{
 			if(handler)
-				handler->HandleFileUpload(context,filename,this);
+				handler->HandleFileUpload(context,name,filename,this);
 		}
 		else
 		{
@@ -530,6 +522,8 @@ void MultipartHelper::Process()
 				value+=ReadSome();
 			context->parameters[name]=value;
 		}
+		//Skip delimiter
+		helperBuffer.erase(0,delimiter.size());
 	}
 }
 //
@@ -538,14 +532,14 @@ void HttpServerContext::ProcessPostData()
 {
 	if(requestHeader.contentLength==0)
 		return;
-	if(requestHeader.contentType=="application/x-www-form-urlencoded")
+	if(requestHeader.contentType.find("application/x-www-form-urlencoded")!=string::npos)
 		ParseParameters(Read(requestHeader.contentLength));
 	else
 	{
-		size_t eqpos=requestHeader.contentType.find('=');
+		size_t eqpos=requestHeader.contentType.find("boundary=");
 		if(eqpos==string::npos)
 			throw HttpException(HttpBadRequest,"Malformed header for multipart data");
-		string delimiter=requestHeader.contentType.substr(eqpos+1);
+		string delimiter=requestHeader.contentType.substr(eqpos+9);
 		MultipartHelper helper(this,delimiter,this,fileHandler);
 		helper.Process();
 	}
