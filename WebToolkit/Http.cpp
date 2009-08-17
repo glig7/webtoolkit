@@ -412,10 +412,7 @@ int MultipartHelper::ReadSomeUnbuffered(void* buf,int len)
 			break;
 	}
 	if(helperBuffer.empty())
-	{
-		eof=true;
 		return 0;
-	}
 	size_t dpos=helperBuffer.find(delimiter);
 	if(dpos==string::npos)
 	{
