@@ -91,6 +91,17 @@ public:
 	bool Wait(int timeout);
 };
 
+class StringInputStream:public InputStream
+{
+protected:
+	const char* buffer;
+	int length;
+	int ReadSomeUnbuffered(void* buf,int len);
+public:
+	StringInputStream(const char* buf,int len);
+	StringInputStream(const std::string& st);
+};
+
 }
 
 #endif

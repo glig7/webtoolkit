@@ -56,6 +56,7 @@ public:
 	static const int resultCodes[];
 	static const char* const resultStrings[];
 	static const char* serverString;
+	static const char* newLine;
 };
 
 /**
@@ -97,7 +98,7 @@ private:
 	void ParseHeaderItem(const std::string& name,const std::string& value);
 public:
 	/**
-		HTTP method. Only GET or POST are supported, as the only usable ones. 
+		HTTP method. Only GET or POST are supported, as the only usable ones.
 		See HttpMethod enum. GET is the default one.
 	*/
 	HttpMethod method;
@@ -106,7 +107,7 @@ public:
 	//! Requested resource.
 	std::string resource;
 	/**
-		If-Modified-Since header value. HttpNotModified should be sent in the response 
+		If-Modified-Since header value. HttpNotModified should be sent in the response
 		if content has not been modified since that time. Should be 0 if not used.
 	*/
 	time_t modifyTime;
@@ -171,6 +172,8 @@ public:
 	time_t modifyTime;
 	//! Expires header value. Can be used to avoid subsequent requests to static content. Should be 0 if not used.
 	time_t expireTime;
+	//! Is this connection persistent
+	bool keepConnection;
 	//! Cookies as name-value pairs. Cookie's expiration time is additionally stored.
 	std::map<std::string,ResponseCookie> cookies;
 	//! Allows to set some custom header, e.g. X-Accel-Redirect for nginx.
@@ -213,9 +216,9 @@ class Server; //Trying not to take additional header dependencies.
 /**
 	\brief Http server context class.
 	This is the "heart" of http processing, because reference to this is passed to all handlers.
-	
+
 	Class is abstract. It is fully implemented in ClientRequest class
-	
+
 	Why extend InputStream and OutputStream and not to embed stream pointers?
 	Because content can be compressed on the fly - so let it be implemented in the Client class.
 */

@@ -54,7 +54,7 @@ Log::~Log()
 
 void Log::SetReportingLevel(LogLevel logLevel)
 {
-    reportingLevel=logLevel;
+	reportingLevel=logLevel;
 }
 
 std::ostringstream& Log::Get(LogLevel level)
@@ -63,8 +63,8 @@ std::ostringstream& Log::Get(LogLevel level)
 	time(&t);
 	os<<Util::Timestamp(t)<<" ";
 	os<<"("<<hex<<Thread::GetCurrentThreadId()<<dec<<") ";
-    os<<names[level]<<" ";
-    return os;
+	os<<names[level]<<" ";
+	return os;
 }
 
 void Log::SetLogHandler(LogHandler* handler)

@@ -11,10 +11,11 @@
 
 #include "Util.h"
 
-#include <sstream>
+#include <iomanip>
 #include <stdexcept>
 #include <time.h>
 #include <stdlib.h>
+#include "Stream.h"
 
 using namespace std;
 
@@ -49,7 +50,12 @@ unsigned char hex_conv(char t)
 	if((t>='0')&&(t<='9'))
 		return static_cast<unsigned char>(t)-'0';
 	else
-		return static_cast<unsigned char>(t)-'A'+0xa;
+	{
+		if((t>='A')&&(t<='Z'))
+			return static_cast<unsigned char>(t)-'A'+0xa;
+		else
+			return static_cast<unsigned char>(t)-'a'+0xa;
+	}
 }
 
 std::string Util::StringToLower(const std::string& st)
@@ -317,6 +323,53 @@ std::string Util::MimeType(const std::string& ext)
 		r="image/jpeg";
 	if(ext=="png")
 		r="image/png";
+	return r;
+}
+
+std::string Util::ToHumanReadableSize(long long s)
+{
+	ostringstream os;
+	if(s<1024)
+		os<<s<<" B";
+	else
+	{
+		os<<fixed<<setprecision(1);
+		float t=s/1024.0f;
+		if(t<1024)
+			os<<t<<" KiB";
+		else
+		{
+			t/=1024;
+			if(t<1024)
+				os<<t<<" MiB";
+			else
+			{
+				t/=1024;
+				os<<t<<" GiB";
+			}
+		}
+	}
+	return os.str();
+}
+
+std::vector<std::string> Util::DecodeChunks(const std::string& st)
+{
+	StringInputStream in(st);
+	vector<string> r;
+	string t;
+	int len;
+	for(;;)
+	{
+		t=in.ReadLine();
+		if(t.empty())
+			break;
+		len=strtol(t.c_str(),NULL,16);
+		if(len==0)
+			break;
+		t=in.Read(len);
+		r.push_back(t);
+		in.ReadLine();
+	}
 	return r;
 }
 

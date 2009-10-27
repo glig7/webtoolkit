@@ -9,12 +9,14 @@
 #include "Socket.h"
 
 #include <memory.h>
+#include <sstream>
 
 #ifdef WIN32
 #include <Ws2tcpip.h>
 #else
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <netdb.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <errno.h>
@@ -78,6 +80,27 @@ bool BaseSocket::Wait(int timeout)
 Socket::Socket(int sock)
 {
 	this->sock=sock;
+}
+
+Socket::Socket(const std::string& host, int portNumber)
+{
+	sock=socket(PF_INET,SOCK_STREAM,IPPROTO_TCP);
+	if(sock<0)
+		throw IOException("Failed to create socket");
+	addrinfo *res,*resIter;
+	ostringstream os;
+	os<<portNumber;
+	if(getaddrinfo(host.c_str(),os.str().c_str(),NULL,&res)!=0)
+		throw IOException("Failed to resolve hostname");
+	for(resIter=res;resIter!=NULL;resIter=resIter->ai_next)
+	{
+		if(connect(sock,resIter->ai_addr,resIter->ai_addrlen)!=0)
+			continue;
+		else
+			break;
+	}
+	if(resIter==NULL)
+		throw IOException("Failed to connect");
 }
 
 Socket::~Socket()

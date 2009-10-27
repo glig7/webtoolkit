@@ -179,4 +179,24 @@ bool Filter::Wait(int timeout)
 	return sourceStream->Wait(timeout);
 }
 
+StringInputStream::StringInputStream(const char* buf,int len):buffer(buf),length(len)
+{
+}
+
+StringInputStream::StringInputStream(const std::string& st):buffer(st.c_str()),length(st.length())
+{
+}
+
+int StringInputStream::ReadSomeUnbuffered(void* buf,int len)
+{
+	int br=min(len,length);
+	if(br!=0)
+	{
+		memcpy(buf,buffer,br);
+		buffer+=br;
+		length-=br;
+	}
+	return br;
+}
+
 }

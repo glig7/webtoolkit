@@ -67,13 +67,13 @@ void Environment::WaitForTermination()
 	while(!terminated)
 		Thread::Sleep(200);
 #else
-    sigset_t wait_mask;
-    sigemptyset(&wait_mask);
-    sigaddset(&wait_mask,SIGINT);
-    sigaddset(&wait_mask,SIGQUIT);
-    sigaddset(&wait_mask,SIGTERM);
-    int sig = 0;
-    sigwait(&wait_mask,&sig);
+	sigset_t wait_mask;
+	sigemptyset(&wait_mask);
+	sigaddset(&wait_mask,SIGINT);
+	sigaddset(&wait_mask,SIGQUIT);
+	sigaddset(&wait_mask,SIGTERM);
+	int sig = 0;
+	sigwait(&wait_mask,&sig);
 #endif
 }
 

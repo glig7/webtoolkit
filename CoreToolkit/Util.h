@@ -10,6 +10,7 @@
 #ifndef _UTIL_H
 #define	_UTIL_H
 
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -40,6 +41,15 @@ public:
 	static std::string GenerateRandomString(int len);
 	static std::string Timestamp(time_t t);
 	static std::string MimeType(const std::string& ext);
+	template<class T>
+	static std::string NumToString(T t)
+	{
+		std::ostringstream os;
+		os<<t;
+		return os.str();
+	}
+	static std::string ToHumanReadableSize(long long s);
+	static std::vector<std::string> DecodeChunks(const std::string& st);
 };
 
 }

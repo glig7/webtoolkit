@@ -9,5 +9,6 @@ add_subdirectory(SimpleBlog)
 add_subdirectory(SessionDemo)
 add_subdirectory(FileServer)
 add_subdirectory(ImageBoard)
+add_subdirectory(RatioProxy)
 #Docs:
 add_subdirectory(Docs)

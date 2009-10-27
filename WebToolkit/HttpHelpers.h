@@ -96,6 +96,19 @@ public:
 	}
 };
 
+/**
+	\brief Simple http client class.
+	Allows to perform simple requests.
+*/
+class HttpClient
+{
+public:
+	//! Run the specified request against server at hostname:port.
+	static void RunRequest(const std::string& hostname,int port,HttpRequestHeader& requestHeader,const std::string& requestData,HttpResponseHeader& responseHeader,std::string& responseData);
+	//! Get resource at the specified location.
+	static std::string Get(const std::string& url);
+};
+
 }
 
 #endif

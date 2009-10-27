@@ -34,6 +34,7 @@ class Socket:public BaseSocket,public InputStream,public OutputStream
 {
 public:
 	Socket(int sock);
+	Socket(const std::string& host, int portNumber);
 	~Socket();
 	int ReadSomeUnbuffered(void* buf,int len);
 	bool WaitUnbuffered(int timeout);

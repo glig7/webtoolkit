@@ -9,7 +9,6 @@
 #include "Main.h"
 
 #include <algorithm>
-#include <iomanip>
 #include <time.h>
 #include <stdlib.h>
 
@@ -194,28 +193,7 @@ void FileServer::Handle(HttpServerContext* context)
 			string t=fileTemplate;
 			Util::Substitute(t,"<%link%>",link);
 			Util::Substitute(t,"<%name%>",visibleName);
-			ostringstream s;
-			if(i->size<1024)
-				s<<i->size<<" B";
-			else
-			{
-				s<<fixed<<setprecision(1);
-				float t=i->size/1024.0f;
-				if(t<1024)
-					s<<t<<" KiB";
-				else
-				{
-					t/=1024;
-					if(t<1024)
-						s<<t<<" MiB";
-					else
-					{
-						t/=1024;
-						s<<t<<" GiB";
-					}
-				}
-			}
-			Util::Substitute(t,"<%size%>",s.str());
+			Util::Substitute(t,"<%size%>",Util::ToHumanReadableSize(i->size));
 			list<<t;
 		}
 	}

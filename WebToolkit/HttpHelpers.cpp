@@ -9,6 +9,8 @@
 #include "HttpHelpers.h"
 #include "Server.h"
 
+#include <stdlib.h>
+
 using namespace std;
 using namespace CoreToolkit;
 
@@ -110,6 +112,59 @@ void Redirector::Handle(HttpServerContext* context)
 		context->Redirect(redirectURI);
 	else
 		throw HttpException(HttpNotFound,"Not found.");
+}
+
+void HttpClient::RunRequest(const std::string& hostname,int port,HttpRequestHeader& requestHeader,const std::string& requestData,HttpResponseHeader& responseHeader,std::string& responseData)
+{
+	Socket s(hostname,port);
+	string rhs=requestHeader.BuildHeader();
+	s.Write(rhs);
+	s.Write(requestData);
+	string st;
+	for(;;)
+	{
+		if(!s.Wait(5000))
+			throw IOException("No data in 5 seconds");
+		st=s.ReadLine();
+		if(st.empty())
+			break;
+		responseHeader.ParseLine(st);
+	}
+	//We're using connection: close (this is by default)
+	//So, just read until the end of stream
+	char buf[1024];
+	while(!s.Eof())
+	{
+		int bytesRead=s.ReadSome(buf,sizeof(buf));
+		responseData.append(buf,bytesRead);
+	}
+}
+
+std::string HttpClient::Get(const std::string& url)
+{
+	size_t slashPos=url.find('/',7);
+	string hostnameFull=url.substr(7,slashPos-7);
+	string hostname=hostnameFull;
+	string resource=url.substr(slashPos);
+	size_t colonPos=hostname.find(':');
+	int port=80;
+	if(colonPos!=string::npos)
+	{
+		string portString=hostname.substr(colonPos+1);
+		hostname.resize(colonPos);
+		port=atoi(portString.c_str());
+	}
+	HttpRequestHeader requestHeader;
+	HttpResponseHeader responseHeader;
+	string requestData;
+	string responseData;
+	requestHeader.host=hostnameFull;
+	requestHeader.method=HttpGet;
+	requestHeader.resource=resource;
+	RunRequest(hostname,port,requestHeader,requestData,responseHeader,responseData);
+	if(responseHeader.result!=HttpOK)
+		throw HttpException(responseHeader.result,"Failed to get data.");
+	return responseData;
 }
 
 }

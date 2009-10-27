@@ -27,7 +27,7 @@ class Thread
 {
 public:
 	static void StartThread(ThreadProc threadProc,void* arg);
-    static unsigned int GetCurrentThreadId();
+	static unsigned int GetCurrentThreadId();
 	static void Sleep(int ms);
 };
 

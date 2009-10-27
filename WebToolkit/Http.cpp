@@ -63,7 +63,9 @@ const char* const Http::resultStrings[]={
 	"502 Bad Gateway"
 };
 
-const char* Http::serverString="madfish-webtoolkit/1.1";
+const char* Http::serverString="madfish-webtoolkit/1.2alpha";
+
+const char* Http::newLine="\r\n";
 
 //HttpRequestHeader methods
 
@@ -136,8 +138,8 @@ void HttpRequestHeader::ParseHeaderItem(const std::string& name,const std::strin
 
 void HttpRequestHeader::ParseLine(const std::string& line)
 {
-	size_t colonPos=line.find(':');
-	if(colonPos==string::npos)
+	size_t httpPos=line.find("HTTP");
+	if(httpPos!=string::npos)
 	{
 		vector<string> items=Util::Extract(line);
 		if(items[0]==Http::methodStrings[HttpPost])
@@ -155,6 +157,7 @@ void HttpRequestHeader::ParseLine(const std::string& line)
 	}
 	else
 	{
+		size_t colonPos=line.find(':');
 		string name=line.substr(0,colonPos);
 		if(line.length()<colonPos+3)
 			throw HttpException(HttpBadRequest,"Unexpected end of line in the header");
@@ -166,22 +169,22 @@ void HttpRequestHeader::ParseLine(const std::string& line)
 std::string HttpRequestHeader::BuildHeader()
 {
 	ostringstream r;
-	r<<Http::methodStrings[method]<<" "<<resource<<" "<<"HTTP/1.1"<<endl;
-	r<<"Host: "<<host<<endl;
-	r<<"User-Agent: "<<userAgent<<endl;
+	r<<Http::methodStrings[method]<<" "<<resource<<" "<<"HTTP/1.1"<<Http::newLine;
+	r<<"Host: "<<host<<Http::newLine;
+	r<<"User-Agent: "<<userAgent<<Http::newLine;
 	if(!contentType.empty())
-	r<<"Content-Type: "<<contentType<<endl;
+	r<<"Content-Type: "<<contentType<<Http::newLine;
 	if(contentLength!=0)
-		r<<"Content-Length: "<<contentLength<<endl;
+		r<<"Content-Length: "<<contentLength<<Http::newLine;
 	if(rangeFrom!=-1)
 	{
 		r<<"Range: bytes="<<rangeFrom<<"-";
 		if(rangeTo!=-1)
 			r<<rangeTo;
-		r<<endl;
+		r<<Http::newLine;
 	}
 	if(modifyTime!=0)
-		r<<"If-Modified-Since: "<<Util::MakeHTTPTime(modifyTime)<<endl;
+		r<<"If-Modified-Since: "<<Util::MakeHTTPTime(modifyTime)<<Http::newLine;
 	if(!cookies.empty())
 	{
 		r<<"Cookie: ";
@@ -191,12 +194,12 @@ std::string HttpRequestHeader::BuildHeader()
 				r<<"; ";
 			r<<iter->first<<"="<<iter->second;
 		}
-		r<<endl;
+		r<<Http::newLine;
 	}
 	for(map<string,string>::iterator iter=customHeaders.begin();iter!=customHeaders.end();iter++)
-		r<<iter->first<<": "<<iter->second<<endl;
-	r<<"Connection: keep-alive"<<endl;
-	r<<endl;
+		r<<iter->first<<": "<<iter->second<<Http::newLine;
+	r<<"Connection: "<<(keepConnection?"keep-alive":"close")<<Http::newLine;
+	r<<Http::newLine;
 	return r.str();
 }
 
@@ -230,7 +233,7 @@ void HttpRequestHeader::ParseCookies(const std::string& st)
 
 //HttpResponseHeader methods
 
-HttpResponseHeader::HttpResponseHeader():result(HttpOK),contentLength(0),rangeFrom(-1),modifyTime(0),expireTime(0),server(Http::serverString)
+HttpResponseHeader::HttpResponseHeader():result(HttpOK),contentLength(0),rangeFrom(-1),modifyTime(0),expireTime(0),server(Http::serverString),keepConnection(false)
 {
 }
 
@@ -288,6 +291,15 @@ void HttpResponseHeader::ParseHeaderItem(const std::string& name,const std::stri
 		ParseCookies(value);
 		return;
 	}
+	if(name=="Connection")
+	{
+		string t=Util::StringToLower(value);
+		if(t.find("keep-alive")!=string::npos)
+			keepConnection=true;
+		if(t.find("close")!=string::npos)
+			keepConnection=false;
+		return;
+	}
 	customHeaders[name]=value;
 }
 
@@ -320,23 +332,24 @@ void HttpResponseHeader::ParseLine(const std::string& line)
 std::string HttpResponseHeader::BuildHeader()
 {
 	ostringstream r;
-	r<<"HTTP/1.1 "<<Http::resultStrings[result]<<endl;
+	r<<"HTTP/1.1 "<<Http::resultStrings[result]<<Http::newLine;
 	time_t timeNow;
-	r<<"Date: "<<Util::MakeHTTPTime(time(&timeNow))<<endl;
-	r<<"Server: "<<server<<endl;
+	r<<"Date: "<<Util::MakeHTTPTime(time(&timeNow))<<Http::newLine;
+	r<<"Server: "<<server<<Http::newLine;
 	if(!location.empty())
-		r<<"Location: "<<location<<endl;
+		r<<"Location: "<<location<<Http::newLine;
 	else
 	{
 		if(modifyTime!=0)
-			r<<"Last-Modified: "<<Util::MakeHTTPTime(expireTime)<<endl;
+			r<<"Last-Modified: "<<Util::MakeHTTPTime(expireTime)<<Http::newLine;
 		if(expireTime!=0)
-			r<<"Expires: "<<Util::MakeHTTPTime(expireTime)<<endl;
+			r<<"Expires: "<<Util::MakeHTTPTime(expireTime)<<Http::newLine;
 	}
 	r<<"Content-Length: "<<contentLength<<endl;
 	if(rangeFrom!=-1)
-		r<<"Content-Range: bytes "<<rangeFrom<<"-"<<rangeTo<<"/"<<rangeTotal<<endl;
-	r<<"Content-Type: "<<contentType<<endl;
+		r<<"Content-Range: bytes "<<rangeFrom<<"-"<<rangeTo<<"/"<<rangeTotal<<Http::newLine;
+	if(!contentType.empty())
+		r<<"Content-Type: "<<contentType<<Http::newLine;
 	if(!cookies.empty())
 	{
 		time_t t;
@@ -347,13 +360,13 @@ std::string HttpResponseHeader::BuildHeader()
 			r<<iter->first<<"="<<iter->second.value;
 			if(iter->second.expireTime!=0)
 				r<<"; expires="<<Util::MakeHTTPTime(iter->second.expireTime);
-			r<<"; path=/"<<endl;
+			r<<"; path=/"<<Http::newLine;
 		}
 	}
 	for(map<string,string>::iterator iter=customHeaders.begin();iter!=customHeaders.end();iter++)
-		r<<iter->first<<": "<<iter->second<<endl;
-	r<<"Connection: keep-alive"<<endl;
-	r<<endl;
+		r<<iter->first<<": "<<iter->second<<Http::newLine;
+	r<<"Connection: "<<(keepConnection?"keep-alive":"close")<<Http::newLine;
+	r<<Http::newLine;
 	return r.str();
 }
 
@@ -471,7 +484,7 @@ void MultipartHelper::Process()
 		//data
 		//--delimiter
 		//data
-		//--delimiter--      <-finish
+		//--delimiter--	  <-finish
 		if(helperBuffer[0]=='-')
 			return;
 		//From now on, we use our own InputStream implementation to read
@@ -623,7 +636,7 @@ void HttpServerContext::ParseParameters(const std::string& st)
 		}
 		eqPos=p.find('=');
 		if(eqPos==string::npos)
-			throw runtime_error("Malformed parameters in HTTP request");
+			continue;
 		l=Util::URLDecode(p.substr(0,eqPos));
 		r=Util::URLDecode(p.substr(eqPos+1));
 		parameters[l]=r;

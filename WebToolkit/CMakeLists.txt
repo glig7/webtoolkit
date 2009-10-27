@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.6)
 include_directories(${CMAKE_SOURCE_DIR}/CoreToolkit)
 link_directories(${CMAKE_BINARY_DIR}/CoreToolkit)
-file(GLOB_RECURSE SOURCES *.cpp *.h)
+file(GLOB SOURCES *.cpp *.h)
 add_library(WebToolkit ${SOURCES})
 target_link_libraries(WebToolkit CoreToolkit)

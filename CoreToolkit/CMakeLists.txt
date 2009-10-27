@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.6)
-file(GLOB_RECURSE SOURCES *.cpp *.h)
+file(GLOB SOURCES *.cpp *.h)
 add_library(CoreToolkit ${SOURCES})
 if(UNIX)
 	add_definitions(-D_FILE_OFFSET_BITS=64)
