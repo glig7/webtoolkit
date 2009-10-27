@@ -171,13 +171,13 @@ void RatioProxy::Handle(HttpServerContext* context)
 	//This is a workaround really, tracker use chunked encoding for HTTP/1.1 but normal for HTTP/1.0.
 	if(responseHeader.customHeaders["Transfer-Encoding"]=="chunked")
 	{
-		responseHeader.customHeaders.erase("Transfer-Encoding");
 		vector<string> r=Util::DecodeChunks(responseData);
 		if(!r.empty())
 			responseData=r[0];
 		else
 			responseData.clear();
 	}
+	responseHeader.customHeaders.erase("Transfer-Encoding");
 	context->responseHeader.customHeaders=responseHeader.customHeaders; //Use the same additional headers
 	context->responseBody<<responseData;
 }
