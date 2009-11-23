@@ -179,6 +179,36 @@ std::string Util::MakeHTTPTime(time_t t)
 	return r.str();
 }
 
+inline bool is_leapyear(unsigned long y)
+{
+	return ((y%4)==0)&&(((y%100)!=0)||((y%400)==0));
+}
+
+inline unsigned long n_leapdays(unsigned long y1,unsigned long y2)
+{
+	y1--;
+	y2--;
+	return (y2/4-y1/4)-(y2/100-y1/100)+(y2/400-y1/400);
+}
+
+const int days_per_month[]={31,28,31,30,31,30,31,31,30,31,30,31};
+
+time_t mkutctime(const tm* tms)
+{
+	unsigned long year,days,hours,minutes;
+	int i;
+	year=tms->tm_year+1900;
+	days=365*(year-1970)+n_leapdays(1970,year);
+	for(i=0;i<tms->tm_mon;i++)
+		days+=days_per_month[i];
+	if((tms->tm_mon>1)&&(is_leapyear(year)))
+		days++;
+	days+=tms->tm_mday-1;
+	hours=days*24+tms->tm_hour;
+	minutes=hours*60+tms->tm_min;
+	return minutes*60+tms->tm_sec;
+}
+
 time_t Util::ParseHTTPTime(const std::string& httpTime)
 {
 	if(httpTime.length()<2)
@@ -207,7 +237,7 @@ time_t Util::ParseHTTPTime(const std::string& httpTime)
 	in>>tms.tm_min;
 	in.ignore();
 	in>>tms.tm_sec;
-	return mktime(&tms);
+	return mkutctime(&tms);
 }
 
 std::string Util::Timestamp(time_t t)
