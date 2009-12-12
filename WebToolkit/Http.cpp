@@ -341,7 +341,7 @@ std::string HttpResponseHeader::BuildHeader()
 	else
 	{
 		if(modifyTime!=0)
-			r<<"Last-Modified: "<<Util::MakeHTTPTime(expireTime)<<Http::newLine;
+			r<<"Last-Modified: "<<Util::MakeHTTPTime(modifyTime)<<Http::newLine;
 		if(expireTime!=0)
 			r<<"Expires: "<<Util::MakeHTTPTime(expireTime)<<Http::newLine;
 	}
