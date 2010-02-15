@@ -106,6 +106,8 @@ public:
 	std::string host;
 	//! Requested resource.
 	std::string resource;
+	//! Original parameters string. (if you need some non-standard behavior)
+	std::string parametersString;
 	/**
 		If-Modified-Since header value. HttpNotModified should be sent in the response
 		if content has not been modified since that time. Should be 0 if not used.

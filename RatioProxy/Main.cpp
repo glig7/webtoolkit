@@ -98,6 +98,33 @@ void RatioProxy::Run()
 	server.Run();
 }
 
+vector<string> DetectParametersOrdering(const string& st)
+{
+	vector<string> r;
+	string t=st;
+	string p,name;
+	size_t ampPos,eqPos;
+	while(!t.empty())
+	{
+		ampPos=t.find('&');
+		if(ampPos!=string::npos)
+		{
+			p=t.substr(0,ampPos);
+			t.erase(0,ampPos+1);
+		}
+		else
+		{
+			p=t;
+			t.clear();
+		}
+		eqPos=p.find('=');
+		if(eqPos==string::npos)
+			continue;
+		name=Util::URLDecode(p.substr(0,eqPos));
+		r.push_back(name);
+	}
+	return r;}
+
 void RatioProxy::Handle(HttpServerContext* context)
 {
 	//Parse request
@@ -142,18 +169,15 @@ void RatioProxy::Handle(HttpServerContext* context)
 	//Make request to the real tracker
 	requestHeader.userAgent=context->requestHeader.userAgent; //Use the same User-Agent
 	requestHeader.customHeaders=context->requestHeader.customHeaders; //Use the same additional headers
-	map<string,string>::iterator iter;
-	bool first=true;
-	for(iter=context->parameters.begin();iter!=context->parameters.end();iter++)
+	//New parameters.
+	vector<string> ordering=DetectParametersOrdering(context->requestHeader.parametersString);
+	for(size_t i=0;i<ordering.size();i++)
 	{
-		if(first)
-		{
+		if(i==0)
 			requestHeader.resource+="?";
-			first=!first;
-		}
 		else
 			requestHeader.resource+="&";
-		requestHeader.resource+=Util::URLEncode(iter->first)+"="+Util::URLEncode(iter->second);
+		requestHeader.resource+=Util::URLEncode(ordering[i])+"="+Util::URLEncode(context->parameters[ordering[i]]);
 	}
 	//Run the request
 	try

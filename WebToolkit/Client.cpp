@@ -68,9 +68,9 @@ bool ClientRequest::Work()
 	size_t qpos=requestHeader.resource.find('?');
 	if(qpos!=string::npos)
 	{
-		string parameters=requestHeader.resource.substr(qpos+1);
+		requestHeader.parametersString=requestHeader.resource.substr(qpos+1);
 		requestHeader.resource.erase(qpos);
-		ParseParameters(parameters);
+		ParseParameters(requestHeader.parametersString);
 	}
 	dataLeft=requestHeader.contentLength;
 	try
